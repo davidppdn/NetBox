@@ -37,11 +37,11 @@ public static class Server
                     break;
                 }
 
+                var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                builder.Append(receivedMessage);
+
                 while (true)
                 {
-                    var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    builder.Append(receivedMessage);
-
                     var newlineIndex = builder.ToString().IndexOf('\n');
 
                     if (newlineIndex == -1)
