@@ -22,6 +22,28 @@ public static class Server
             await using NetworkStream stream = handler.GetStream();
 
             Console.WriteLine("Client connected.");
+
+            byte[] buffer = new byte[1024];
+
+            while (stream.CanRead)
+            {
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                if (bytesRead == 0)
+                {
+                    Console.WriteLine("Client disconnected.");
+                    break;
+                }
+
+                var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+                if (string.IsNullOrWhiteSpace(receivedMessage))
+                {
+                    continue;
+                }
+
+                Console.WriteLine($"Received message: {receivedMessage}");
+            }
         }
         catch (Exception ex)
         {
