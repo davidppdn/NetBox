@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-public static class Program
+public static class Server
 {
     private static readonly IPAddress IpAddress = IPAddress.Loopback;
     private static readonly int Port = 5000;
