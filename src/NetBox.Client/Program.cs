@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using NetBox.Shared.Protocols;
+using System.Net.Sockets;
 
 public static class Client
 {
@@ -19,7 +20,8 @@ public static class Client
             if (message.ToLower() == "exit")
                 break;
 
-            byte[] data = System.Text.Encoding.UTF8.GetBytes(message);
+            Message netMessage = new(message);
+            byte[] data = netMessage.ToBytes();
             await stream.WriteAsync(data, 0, data.Length);
         }
     }

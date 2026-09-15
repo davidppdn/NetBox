@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 public static class Server
 {
@@ -24,6 +25,7 @@ public static class Server
             Console.WriteLine("Client connected.");
 
             byte[] buffer = new byte[1024];
+            StringBuilder builder = new StringBuilder();
 
             while (stream.CanRead)
             {
@@ -35,14 +37,25 @@ public static class Server
                     break;
                 }
 
-                var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
-
-                if (string.IsNullOrWhiteSpace(receivedMessage))
+                while (true)
                 {
-                    continue;
-                }
+                    var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    builder.Append(receivedMessage);
 
-                Console.WriteLine($"Received message: {receivedMessage}");
+                    var newlineIndex = builder.ToString().IndexOf('\n');
+
+                    if (newlineIndex == -1)
+                    {
+                        Console.WriteLine("Received message without newline. Waiting for more data...");
+                        break;
+                    }
+
+                    var completeMessage = builder.ToString(0, newlineIndex);
+                    builder = builder.Remove(0, newlineIndex + 1);
+
+                    Console.WriteLine($"Received message: {completeMessage}");
+                }
+                
             }
         }
         catch (Exception ex)
