@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using NetBox.Shared.Protocols;
 
 public static class Server
 {
@@ -25,9 +26,9 @@ public static class Server
             Console.WriteLine("Client connected.");
 
             byte[] buffer = new byte[1024];
-            StringBuilder builder = new StringBuilder();
+            var parser = new MessageParser();
 
-            while (stream.CanRead)
+            while (true)
             {
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
 
@@ -37,25 +38,12 @@ public static class Server
                     break;
                 }
 
-                var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                builder.Append(receivedMessage);
+                var receivedMessages = parser.ParseBytes(buffer, bytesRead);
 
-                while (true)
+                foreach (var message in receivedMessages)
                 {
-                    var newlineIndex = builder.ToString().IndexOf('\n');
-
-                    if (newlineIndex == -1)
-                    {
-                        Console.WriteLine("Received message without newline. Waiting for more data...");
-                        break;
-                    }
-
-                    var completeMessage = builder.ToString(0, newlineIndex);
-                    builder = builder.Remove(0, newlineIndex + 1);
-
-                    Console.WriteLine($"Received message: {completeMessage}");
+                    Console.WriteLine($"Received message: {message.Content}");
                 }
-                
             }
         }
         catch (Exception ex)
