@@ -55,21 +55,33 @@ public static class Server
         var parser = new MessageParser();
         while (true)
         {
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead == 0)
+            try
             {
-                Console.WriteLine("Client disconnected.");
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                if (bytesRead == 0)
+                {
+                    Console.WriteLine("Client disconnected.");
+                    lock (ClientsLock)
+                    {
+                        ConnectedClients.Remove(handler);
+                    }
+                    break;
+                }
+                var receivedMessages = parser.ParseBytes(buffer, bytesRead);
+                foreach (var message in receivedMessages)
+                {
+                    Console.WriteLine($"Received message: {message.Content}");
+                    await BroadcastMessage(message.Content);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while handling connection: {ex.Message}");
                 lock (ClientsLock)
                 {
                     ConnectedClients.Remove(handler);
                 }
                 break;
-            }
-            var receivedMessages = parser.ParseBytes(buffer, bytesRead);
-            foreach (var message in receivedMessages)
-            {
-                Console.WriteLine($"Received message: {message.Content}");
-                await BroadcastMessage(message.Content);
             }
         }
     }
