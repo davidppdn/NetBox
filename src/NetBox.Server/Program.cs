@@ -19,32 +19,12 @@ public static class Server
 
             Console.WriteLine($"Listening on {IpAddress}:{Port}");
 
-            // Waits asynchronously until a client establishes a TCP connection
-            using TcpClient handler = await listener.AcceptTcpClientAsync();
-            await using NetworkStream stream = handler.GetStream();
-
-            Console.WriteLine("Client connected.");
-
-            byte[] buffer = new byte[1024];
-            var parser = new MessageParser();
-
             while (true)
             {
-                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-
-                if (bytesRead == 0)
-                {
-                    Console.WriteLine("Client disconnected.");
-                    break;
-                }
-
-                var receivedMessages = parser.ParseBytes(buffer, bytesRead);
-
-                foreach (var message in receivedMessages)
-                {
-                    Console.WriteLine($"Received message: {message.Content}");
-                }
-            }
+                TcpClient handler = await listener.AcceptTcpClientAsync();
+                Console.WriteLine("Client connected.");
+                _ = HandleConnection(handler);
+            }            
         }
         catch (Exception ex)
         {
@@ -53,6 +33,27 @@ public static class Server
         finally
         {
             listener.Stop();
+        }
+    }
+
+    private static async Task HandleConnection(TcpClient handler)
+    {
+        await using NetworkStream stream = handler.GetStream();
+        byte[] buffer = new byte[1024];
+        var parser = new MessageParser();
+        while (true)
+        {
+            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+            {
+                Console.WriteLine("Client disconnected.");
+                break;
+            }
+            var receivedMessages = parser.ParseBytes(buffer, bytesRead);
+            foreach (var message in receivedMessages)
+            {
+                Console.WriteLine($"Received message: {message.Content}");
+            }
         }
     }
 }
