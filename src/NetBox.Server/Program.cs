@@ -21,8 +21,12 @@ public static class Server
 
             while (true)
             {
+                // await pauses this method until a client connects without blocking the thread,
+                // allowing the thread to do other work while waiting.
                 TcpClient handler = await listener.AcceptTcpClientAsync();
                 Console.WriteLine("Client connected.");
+                // Start handling this connection without waiting for it to finish,
+                // allowing the server to continue accepting new connections.
                 _ = HandleConnection(handler);
             }            
         }
@@ -36,6 +40,8 @@ public static class Server
         }
     }
 
+    // This async method can pause at await without blocking the thread,
+    // allowing other work to run while waiting for I/O.
     private static async Task HandleConnection(TcpClient handler)
     {
         await using NetworkStream stream = handler.GetStream();
