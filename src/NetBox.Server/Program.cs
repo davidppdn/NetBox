@@ -69,7 +69,26 @@ public static class Server
             foreach (var message in receivedMessages)
             {
                 Console.WriteLine($"Received message: {message.Content}");
+                await BroadcastMessage(message.Content);
             }
+        }
+    }
+
+    private static async Task BroadcastMessage(string message)
+    {
+        byte[] messageBytes = new Message(message).ToBytes();
+
+        var clientListCopy = new List<TcpClient>();
+       
+        lock (ClientsLock)
+        {
+            clientListCopy.AddRange(ConnectedClients);
+        }
+
+        foreach (var client in clientListCopy)
+        {
+            var stream = client.GetStream();
+            await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
         }
     }
 }
