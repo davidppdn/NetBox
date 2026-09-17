@@ -28,7 +28,7 @@ public static class Server
             while (true)
             {
                 TcpClient handler = await listener.AcceptTcpClientAsync();
-                
+
                 lock (ClientsLock)
                 {
                     ConnectedClients.Add(handler);
@@ -50,21 +50,17 @@ public static class Server
 
     private static async Task HandleConnection(TcpClient handler)
     {
-        await using NetworkStream stream = handler.GetStream();
-        byte[] buffer = new byte[1024];
-        var parser = new MessageParser();
-        while (true)
+        try
         {
-            try
+            await using NetworkStream stream = handler.GetStream();
+            byte[] buffer = new byte[1024];
+            var parser = new MessageParser();
+            while (true)
             {
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 if (bytesRead == 0)
                 {
                     Console.WriteLine("Client disconnected.");
-                    lock (ClientsLock)
-                    {
-                        ConnectedClients.Remove(handler);
-                    }
                     break;
                 }
                 var receivedMessages = parser.ParseBytes(buffer, bytesRead);
@@ -74,15 +70,19 @@ public static class Server
                     await BroadcastMessage(message.Content);
                 }
             }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while handling connection: {ex.Message}");
+        }
+        finally
+        {
+            lock (ClientsLock)
             {
-                Console.WriteLine($"An error occurred while handling connection: {ex.Message}");
-                lock (ClientsLock)
-                {
-                    ConnectedClients.Remove(handler);
-                }
-                break;
+                ConnectedClients.Remove(handler);
             }
+
+            handler.Close();
         }
     }
 

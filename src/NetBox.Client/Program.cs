@@ -26,17 +26,28 @@ public static class Client
 
     private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            Console.Write("Enter a message to send (or 'exit' to quit): ");
-            string message = Console.ReadLine();
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                Console.Write("Enter a message to send (or 'exit' to quit): ");
+                string message = Console.ReadLine();
 
-            if (message.ToLower() == "exit")
-                break;
+                if (message.ToLower() == "exit")
+                    break;
 
-            Message netMessage = new(message);
-            byte[] data = netMessage.ToBytes();
-            await stream.WriteAsync(data, 0, data.Length, cancellationToken);
+                Message netMessage = new(message);
+                byte[] data = netMessage.ToBytes();
+                await stream.WriteAsync(data, 0, data.Length, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine($"Cancel occurred.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending message: {ex.Message}");
         }
     }
 
@@ -45,20 +56,32 @@ public static class Client
         byte[] buffer = new byte[1024];
         var parser = new MessageParser();
 
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
-            if (bytesRead == 0)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                Console.WriteLine("Server disconnected.");
-                break;
-            }
-            List<Message> messages = parser.ParseBytes(buffer, bytesRead);
-            
-            foreach (var msg in messages)
-            {
-                Console.WriteLine($"Received: {msg.Content}");
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                if (bytesRead == 0)
+                {
+                    Console.WriteLine("Server disconnected.");
+                    break;
+                }
+                List<Message> messages = parser.ParseBytes(buffer, bytesRead);
+
+                foreach (var msg in messages)
+                {
+                    Console.WriteLine($"Received: {msg.Content}");
+                }
             }
         }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine($"Cancel occurred.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading from server: {ex.Message}");
+        }
+
     }
 }
