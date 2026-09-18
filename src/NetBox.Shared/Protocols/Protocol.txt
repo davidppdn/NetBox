@@ -31,3 +31,62 @@ Length unit:       bytes
 Text encoding:     UTF-8
 Zero length:       field data is omitted
 Field order:       Command → User → Payload
+
+Protocol Design V2:
+Building upon the intial design, I am also going to introduce response messages. This will
+require an expansion of the protocol.
+
+Instead of restricting the protocol to a rigid structure, I can use a [header][payload][trailer] format.
+Why? Using this structure, I can shove as many additional fields into the header as I want,
+without having to modify the protocol structure in every interation.
+
+Lets start with the obvious: the payload field should be [4 bytes length][payload data].
+This will allow for variable length data.
+
+Next, the trailer should indicate the end of the message. This can be a fixed value, such as a specific byte sequence or a checksum.
+For simplicity, I will use a fixed byte sequence as the trailer. This will allow the parser to easily identify the end of the message.
+
+Now for the header part. The first field in the header should be the length of the header, a 4 byte value.
+This will allow the parser to immedietly know how many bytes to read for the header.
+Actually, this leads to an interesting scenario. Header and no body. This is a valid scenario, and the parser should be able to handle it gracefully.
+
+Back to the header. The next field should be a number representing the number of fields. This will allow
+the parser to easily iterate though the fields in the header, instead of having to know the exact structure of the header in advance.
+
+The next is how each field should look like. We can use a similar structure to the payload structure, with a 
+length value and the data value. This will allow for variable length fields in the header, and will also allow for easy parsing of the header.
+
+We can assign certain integers to certain fields. For example, 1 for command, 2 for user, 3 for response code, etc. This will allow the parser to easily identify the fields in the header.
+
+The exact definition will be defined in the message class.  But this is the general idea.
+
+Protocol Design V3:
+Instead of using just a header length, I can use a whole msg length, then followed by header length.
+This will allow the parser to know how many bytes to read for the entire message, and then how many bytes to read for the header. This will also allow for easy parsing of the message, as the parser can read the entire message into memory, and then parse the header and payload separately.
+This also removes the need of the trailer, as the parser can know when msg ends just by reading msg length.
+However, the trailer can be used to validate that the msg wasnt tampered with, by using a checksum. 
+However, I will not implement this feature for now, as it is not necessary for the initial design.
+
+To do a quick table summary:
+[4 bytes] - total msg length
+[4 bytes] - header length
+[4 bytes] - number of fields in header
+[4 bytes] - field length
+[variable bytes] - field data
+[4 bytes] - payload length
+[variable bytes] - payload data
+
+Ah, I missed the field identifier.
+
+To do a quick table summary:
+[4 bytes] - total msg length (byte length)
+[4 bytes] - header length (byte length)
+[4 bytes] - number of fields in header (number)
+[4 bytes] - field identifier (number)
+[4 bytes] - field length (byte length)
+[variable bytes] - field data
+[4 bytes] - payload length (byte length)
+[variable bytes] - payload data
+
+All bytes are in big-endian format, and all text is in UTF-8 encoding. 
+* NOTE: exclude the 4 bytes from total msg length, as it is not part of the message itself. 
