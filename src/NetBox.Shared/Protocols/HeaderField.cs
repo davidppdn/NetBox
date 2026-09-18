@@ -75,8 +75,16 @@ public class HeaderField
             return false;
         }
 
-        string value = Encoding.UTF8.GetString(data, fieldIdentifierByteSize + fieldLengthByteSize, fieldLength);
-        headerField = new HeaderField((HeaderFieldIdEnum)fieldIdentifier, value);
-        return true;
+        try
+        {
+            var utf8Strict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            string value = utf8Strict.GetString(data, fieldIdentifierByteSize + fieldLengthByteSize, fieldLength);
+            headerField = new HeaderField((HeaderFieldIdEnum)fieldIdentifier, value);
+            return true;
+        }
+        catch (DecoderFallbackException)
+        {
+            return false;
+        }
     }
 }
