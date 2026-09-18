@@ -1,0 +1,82 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Buffers.Binary;
+
+namespace NetBox.Shared.Protocols;
+
+public class HeaderField
+{
+    private const int fieldIdentifierByteSize = 4;
+    private const int fieldLengthByteSize = 4;
+
+    public readonly HeaderFieldIdEnum Id;
+    public readonly string Value;
+
+    public HeaderField(HeaderFieldIdEnum id, string value)
+    {
+        Id = id;
+        Value = value;
+    }
+
+    /// <summary>
+    /// Converts the HeaderField instance into a byte array representation.
+    /// Used for protocol serialization. The format is as follows:
+    /// [4 bytes] - Field Identifier (big-endian)
+    /// [4 bytes] - Field Length (big-endian)
+    /// [N bytes] - Field Value (UTF-8 encoded)
+    /// </summary>
+    /// <returns></returns>
+    public byte[] Serialize()
+    {
+        byte[] fieldIdentifier = new byte[fieldIdentifierByteSize];
+        BinaryPrimitives.WriteInt32BigEndian(fieldIdentifier, (int)Id);
+
+        byte[] valueBytes = Encoding.UTF8.GetBytes(Value);
+
+        byte[] fieldLength = new byte[fieldLengthByteSize];
+        BinaryPrimitives.WriteInt32BigEndian(fieldLength, valueBytes.Length);
+
+        byte[] result = new byte[fieldIdentifier.Length + fieldLength.Length + valueBytes.Length];
+        
+        Buffer.BlockCopy(fieldIdentifier, 0, result, 0, fieldIdentifier.Length);
+        Buffer.BlockCopy(fieldLength, 0, result, fieldIdentifier.Length, fieldLength.Length);
+        Buffer.BlockCopy(valueBytes, 0, result, fieldIdentifier.Length + fieldLength.Length, valueBytes.Length);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a byte array back into a HeaderField instance.
+    /// </summary>
+    /// <param name="data">An array of bytes representing a single serialized HeaderField.</param>
+    /// <param name="headerField">The deserialized HeaderField instance, or null if deserialization fails.</param>
+    /// <returns>true if deserialization is successful; otherwise, false.</returns>
+    public static bool Deserialize(byte[] data, out HeaderField? headerField)
+    {
+        headerField = null;
+
+        if (data.Length < fieldIdentifierByteSize + fieldLengthByteSize)
+        {
+            return false;
+        }
+
+        int fieldIdentifier = BinaryPrimitives.ReadInt32BigEndian(data);
+
+        if (!Enum.IsDefined(typeof(HeaderFieldIdEnum), fieldIdentifier))
+        {
+            return false;
+        }
+
+        int fieldLength = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(fieldIdentifierByteSize, fieldLengthByteSize));
+
+        if (data.Length != fieldIdentifierByteSize + fieldLengthByteSize + fieldLength)
+        {
+            return false;
+        }
+
+        string value = Encoding.UTF8.GetString(data, fieldIdentifierByteSize + fieldLengthByteSize, fieldLength);
+        headerField = new HeaderField((HeaderFieldIdEnum)fieldIdentifier, value);
+        return true;
+    }
+}
