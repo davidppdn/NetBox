@@ -1,0 +1,33 @@
+Protocol Design V1:
+
+Message
+- Command
+- User
+- Payload
+
+Message Structure:
+[4 bytes] Command Length
+Command (UTF-8)
+[4 bytes] User Length
+User (UTF-8)
+[4 bytes] Payload Length
+Payload (UTF-8)
+
+Validation:
+Using fixed length length fields makes the parser deterministic. It is easier to parse as well.
+Length is to be measured in bytes, because characters may be multi-byte in UTF-8 encoding.
+The length fields are 4 bytes, which allows for a maximum length of 2^32 - 1 bytes (approximately 4GB) for each field.
+Using UTF-8 encoding allows for a wide range of characters, including international characters and emojis. This is also 
+sufficient for initial design.
+Next, for all commands, all three fields exist at all times. If a field is not used, the length will simply be 0.
+Use unsigned integers for the length fields to avoid negative lengths. This is important for validation and error handling.
+Use big-endian byte order for the length fields to ensure consistency across different platforms and architectures.
+
+Summary:
+Length type:       uint32
+Length size:       4 bytes
+Length encoding:   big-endian
+Length unit:       bytes
+Text encoding:     UTF-8
+Zero length:       field data is omitted
+Field order:       Command → User → Payload
