@@ -110,3 +110,9 @@ Instead, the field length should include the field identifier:
 This way, we need to parse less bytes overall, and it also makes more sense semantically,
 since everywhere else the length is first. This will be also done with Header, where
 deserializer will assume no length bytes of header passed in.
+
+Protocol V5:
+I have to much text so Idk if I mentioned it explcitly, but for the sake of the exercise and simplicity,
+the payload will be UTF8, and just a string. This is because in order to support the payload being a general
+byte[], we would need to add more headers, make them mandatory, so the parsers know whether the payload is json, 
+utf8, xml, binary etc etc.
