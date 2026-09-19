@@ -89,7 +89,7 @@ public class Header
 
         var remainingData = data.AsSpan(fieldCountByteSize);
         var startIndex = 0;
-        
+
         try
         {
             for (var i = 0; i < fieldCount; i++)
@@ -106,7 +106,7 @@ public class Header
                     return false;
                 }
 
-                var headerFieldBytes = remainingData.Slice(fieldLengthByteEndIndex, fieldLength);
+                var headerFieldBytes = remainingData.Slice(fieldLengthByteEndIndex, fieldLength).ToArray();
 
                 if (HeaderField.Deserialize(headerFieldBytes, out var headerField))
                 {
@@ -124,6 +124,12 @@ public class Header
         catch (ArgumentOutOfRangeException exception)
         {
             Console.WriteLine("An error occured parsing header:" + exception.Message);
+            header = null;
+            return false;
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine("An error occured parsing headers:" + exception.Message);
             header = null;
             return false;
         }
