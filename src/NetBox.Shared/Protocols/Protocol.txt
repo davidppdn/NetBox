@@ -90,3 +90,22 @@ To do a quick table summary:
 
 All bytes are in big-endian format, and all text is in UTF-8 encoding. 
 * NOTE: exclude the 4 bytes from total msg length, as it is not part of the message itself. 
+
+Protocol Design V4:
+I noticed a small issue with the previous design.
+Suppose we try and parse the header field, which has the following structure:
+[4 bytes] - field identifier (number)
+[4 bytes] - field length (byte length)
+[variable bytes] - field data
+
+Now, in order to parse the field data, we need to know the field length.
+The field length is currently bytes 4 - 7 of the field. It is slightly less efficient,
+because we would need to read the length, and parse in the bytes before hand.
+Instead, the field length should include the field identifier:
+
+[4 bytes] - field length (byte length)
+[4 bytes] - field identifier (number)
+[variable bytes] - field data
+
+This way, we need to parse less bytes overall, and it also makes more sense semantically,
+since everywhere else the length is first.

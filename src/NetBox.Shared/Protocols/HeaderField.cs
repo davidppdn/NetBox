@@ -22,8 +22,8 @@ public class HeaderField
     /// <summary>
     /// Converts the HeaderField instance into a byte array representation.
     /// Used for protocol serialization. The format is as follows:
-    /// [4 bytes] - Field Identifier (big-endian)
     /// [4 bytes] - Field Length (big-endian)
+    /// [4 bytes] - Field Identifier (big-endian)
     /// [N bytes] - Field Value (UTF-8 encoded)
     /// </summary>
     /// <returns></returns>
@@ -35,55 +35,50 @@ public class HeaderField
         byte[] valueBytes = Encoding.UTF8.GetBytes(Value);
 
         byte[] fieldLength = new byte[fieldLengthByteSize];
-        BinaryPrimitives.WriteInt32BigEndian(fieldLength, valueBytes.Length);
+        BinaryPrimitives.WriteInt32BigEndian(fieldLength, valueBytes.Length + fieldIdentifier.Length);
 
-        byte[] result = new byte[fieldIdentifier.Length + fieldLength.Length + valueBytes.Length];
+        byte[] result = new byte[fieldLength.Length + fieldIdentifier.Length + valueBytes.Length];
         
-        Buffer.BlockCopy(fieldIdentifier, 0, result, 0, fieldIdentifier.Length);
-        Buffer.BlockCopy(fieldLength, 0, result, fieldIdentifier.Length, fieldLength.Length);
-        Buffer.BlockCopy(valueBytes, 0, result, fieldIdentifier.Length + fieldLength.Length, valueBytes.Length);
+        Buffer.BlockCopy(fieldLength, 0, result, 0, fieldLength.Length);
+        Buffer.BlockCopy(fieldIdentifier, 0, result, fieldLength.Length, fieldIdentifier.Length);
+        Buffer.BlockCopy(valueBytes, 0, result, fieldLength.Length + fieldIdentifier.Length, valueBytes.Length);
 
         return result;
     }
 
     /// <summary>
     /// Attempts to deserialize a byte array back into a HeaderField instance.
+    /// Note:
+    /// The data should only be the [identifier][data], the length prefix is not included in the data array.
     /// </summary>
     /// <param name="data">An array of bytes representing a single serialized HeaderField.</param>
     /// <param name="headerField">The deserialized HeaderField instance, or null if deserialization fails.</param>
     /// <returns>true if deserialization is successful; otherwise, false.</returns>
     public static bool Deserialize(byte[] data, out HeaderField? headerField)
     {
-        headerField = null;
-
-        if (data.Length < fieldIdentifierByteSize + fieldLengthByteSize)
-        {
-            return false;
-        }
-
-        int fieldIdentifier = BinaryPrimitives.ReadInt32BigEndian(data);
-
-        if (!Enum.IsDefined(typeof(HeaderFieldIdEnum), fieldIdentifier))
-        {
-            return false;
-        }
-
-        int fieldLength = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(fieldIdentifierByteSize, fieldLengthByteSize));
-
-        if (data.Length != fieldIdentifierByteSize + fieldLengthByteSize + fieldLength)
-        {
-            return false;
-        }
-
         try
         {
-            var utf8Strict = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-            string value = utf8Strict.GetString(data, fieldIdentifierByteSize + fieldLengthByteSize, fieldLength);
+            if (data.Length < fieldIdentifierByteSize)
+            {
+                headerField = null;
+                return false;
+            }
+
+            int fieldIdentifier = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(0, fieldIdentifierByteSize));
+            if (!Enum.IsDefined(typeof(HeaderFieldIdEnum), fieldIdentifier))
+            {
+                headerField = null;
+                return false;
+            }
+
+            var utf8StrictEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            string value = utf8StrictEncoding.GetString(data, fieldIdentifierByteSize, data.Length - fieldIdentifierByteSize);
             headerField = new HeaderField((HeaderFieldIdEnum)fieldIdentifier, value);
             return true;
         }
-        catch (DecoderFallbackException)
+        catch (DecoderFallbackException exception)
         {
+            headerField = null;
             return false;
         }
     }
