@@ -108,4 +108,5 @@ Instead, the field length should include the field identifier:
 [variable bytes] - field data
 
 This way, we need to parse less bytes overall, and it also makes more sense semantically,
-since everywhere else the length is first.
+since everywhere else the length is first. This will be also done with Header, where
+deserializer will assume no length bytes of header passed in.
