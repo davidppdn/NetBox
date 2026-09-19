@@ -110,6 +110,13 @@ public class Header
 
                 if (HeaderField.Deserialize(headerFieldBytes, out var headerField))
                 {
+                    if (headerField == null)
+                    {
+                        Console.WriteLine("Header deserialize returned null: " + headerFieldBytes.ToString());
+                        header = null;
+                        return false;
+                    }
+
                     header.AddField(headerField);
                 }
                 else

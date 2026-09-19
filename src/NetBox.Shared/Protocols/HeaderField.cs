@@ -78,6 +78,7 @@ public class HeaderField
         }
         catch (DecoderFallbackException exception)
         {
+            Console.WriteLine("Failed to decode message. Data: " + exception.BytesUnknown);
             headerField = null;
             return false;
         }
