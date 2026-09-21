@@ -43,3 +43,18 @@ will only support a defined set of commands. This is because the protocol is bei
 towards this application only. 
 
 This means using headers to support specific command structures and validating them through classes made in the shared project.
+
+## Proposed changes
+Given that each request / response represents a command request / response, it makes the command mandatory for each request and response, 
+so the server knows what was the command, and the client knows to what command was the response for. As such, it is better to include the 
+command in the structure of the message rather than an optional field in the header. Proposed change:
+
+Message contains the following:
+[4 bytes] - Command ID ( enum mapping )
+[4 bytes] - Header Length ( bytes )
+[M bytes] - Header
+[4 bytes] - Payload Length ( bytes )
+[N bytes] - Payload
+
+Accepted: [v]
+Implemented: [>]
