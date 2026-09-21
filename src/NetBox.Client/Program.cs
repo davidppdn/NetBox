@@ -28,17 +28,27 @@ public static class Client
     {
         try
         {
+            Console.WriteLine("Login with username:");
+            string username = Console.ReadLine();
+
+            var header = new Header();
+            header.AddField(new HeaderField(HeaderFieldIdEnum.Command, "LOGIN"));
+            var message = new Message(header, username);
+
+            byte[] data = message.Serialize();
+            await stream.WriteAsync(data, 0, data.Length);
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                Console.Write("Enter a message to send (or 'exit' to quit): ");
-                string message = Console.ReadLine();
+                //Console.Write("Enter a message to send (or 'exit' to quit): ");
+                //string message = Console.ReadLine();
 
-                if (message.ToLower() == "exit")
-                    break;
+                //if (message.ToLower() == "exit")
+                //    break;
 
-                Message netMessage = new(message);
-                byte[] data = netMessage.ToBytes();
-                await stream.WriteAsync(data, 0, data.Length, cancellationToken);
+                //Message netMessage = new(message);
+                //byte[] data = netMessage.ToBytes();
+                //await stream.WriteAsync(data, 0, data.Length, cancellationToken);
             }
         }
         catch (OperationCanceledException)
@@ -70,7 +80,7 @@ public static class Client
 
                 foreach (var msg in messages)
                 {
-                    Console.WriteLine($"Received: {msg.Content}");
+                    Console.WriteLine($"Received: {msg.GetMessage()}");
                 }
             }
         }

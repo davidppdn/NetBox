@@ -143,4 +143,14 @@ public class Header
 
         return true;
     }
+
+    public override string ToString()
+    {
+        string result = "";
+        foreach (var headerField in _fields)
+        {
+            result += $"Id: {headerField.Id} Value: {headerField.Value}\n";
+        }
+        return result;
+    }
 }

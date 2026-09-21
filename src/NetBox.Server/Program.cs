@@ -65,7 +65,7 @@ public static class Server
                 {
                     if (message == null) continue;
 
-                    Console.WriteLine($"Received message: {message.GetMessage()}");
+                    message.PrintString();
                     //await BroadcastMessage(message.Content);
                 }
             }

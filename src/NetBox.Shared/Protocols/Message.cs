@@ -131,4 +131,12 @@ public class Message
             return false;
         }
     }
+
+    public void PrintString()
+    {
+        Console.WriteLine("Header:");
+        Console.WriteLine(_header.ToString());
+        Console.WriteLine("Payload:");
+        Console.WriteLine(GetMessage());
+    }
 }
