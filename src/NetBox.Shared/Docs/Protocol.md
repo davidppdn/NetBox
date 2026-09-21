@@ -1,4 +1,4 @@
-# Protocol
+# Protocol  - Dvos
 
 This document defines the general format of the created protocol, explaining the decisions made.
 
@@ -44,7 +44,7 @@ towards this application only.
 
 This means using headers to support specific command structures and validating them through classes made in the shared project.
 
-## Proposed changes
+## Proposed changes 21/9/2026
 Given that each request / response represents a command request / response, it makes the command mandatory for each request and response, 
 so the server knows what was the command, and the client knows to what command was the response for. As such, it is better to include the 
 command in the structure of the message rather than an optional field in the header. Proposed change:
@@ -55,6 +55,16 @@ Message contains the following:
 [M bytes] - Header
 [4 bytes] - Payload Length ( bytes )
 [N bytes] - Payload
+
+Accepted: [v]
+Implemented: [>]
+
+## Proposed changes 21/9/2026
+To ensure the message structure remains consistent and easy to parse, the header is mandatory
+while the payload is optional. A message should always contain a Header Length and HeaderField 
+Length, but it can contain 0 HeaderFields.
+
+The payload may be omited if command does not need it.
 
 Accepted: [v]
 Implemented: [>]
