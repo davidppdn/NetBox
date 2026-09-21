@@ -64,7 +64,8 @@ To ensure the message structure remains consistent and easy to parse, the header
 while the payload is optional. A message should always contain a Header Length and HeaderField 
 Length, but it can contain 0 HeaderFields.
 
-The payload may be omited if command does not need it.
+The payload may be omited if command does not need it, but the length should be required for
+length check purposes.
 
 Accepted: [v]
 Implemented: [>]
