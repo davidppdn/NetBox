@@ -31,9 +31,9 @@ public static class Client
             Console.WriteLine("Login with username:");
             string username = Console.ReadLine();
 
-            var header = new Header();
-            header.AddField(new HeaderField(HeaderFieldIdEnum.Command, "LOGIN"));
-            var message = new Message(header, username);
+            var header = new OldHeader();
+            header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Command, "LOGIN"));
+            var message = new OldMessage(header, username);
 
             byte[] data = message.Serialize();
             await stream.WriteAsync(data, 0, data.Length);
@@ -64,7 +64,7 @@ public static class Client
     private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[1024];
-        var parser = new MessageParser();
+        var parser = new OldMessageParser();
 
         try
         {
@@ -76,7 +76,7 @@ public static class Client
                     Console.WriteLine("Server disconnected.");
                     break;
                 }
-                List<Message> messages = parser.ParseBytes(buffer, bytesRead);
+                List<OldMessage> messages = parser.ParseBytes(buffer, bytesRead);
 
                 foreach (var msg in messages)
                 {

@@ -5,15 +5,15 @@ using System.Buffers.Binary;
 
 namespace NetBox.Shared.Protocols;
 
-public class HeaderField
+public class OldHeaderField
 {
     private const int fieldIdentifierByteSize = 4;
     private const int fieldLengthByteSize = 4;
 
-    public readonly HeaderFieldIdEnum Id;
+    public readonly OldHeaderFieldIdEnum Id;
     public readonly string Value;
 
-    public HeaderField(HeaderFieldIdEnum id, string value)
+    public OldHeaderField(OldHeaderFieldIdEnum id, string value)
     {
         Id = id;
         Value = value;
@@ -54,7 +54,7 @@ public class HeaderField
     /// <param name="data">An array of bytes representing a single serialized HeaderField.</param>
     /// <param name="headerField">The deserialized HeaderField instance, or null if deserialization fails.</param>
     /// <returns>true if deserialization is successful; otherwise, false.</returns>
-    public static bool Deserialize(byte[] data, out HeaderField? headerField)
+    public static bool Deserialize(byte[] data, out OldHeaderField? headerField)
     {
         try
         {
@@ -65,7 +65,7 @@ public class HeaderField
             }
 
             int fieldIdentifier = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(0, fieldIdentifierByteSize));
-            if (!Enum.IsDefined(typeof(HeaderFieldIdEnum), fieldIdentifier))
+            if (!Enum.IsDefined(typeof(OldHeaderFieldIdEnum), fieldIdentifier))
             {
                 headerField = null;
                 return false;
@@ -73,7 +73,7 @@ public class HeaderField
 
             var utf8StrictEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
             string value = utf8StrictEncoding.GetString(data, fieldIdentifierByteSize, data.Length - fieldIdentifierByteSize);
-            headerField = new HeaderField((HeaderFieldIdEnum)fieldIdentifier, value);
+            headerField = new OldHeaderField((OldHeaderFieldIdEnum)fieldIdentifier, value);
             return true;
         }
         catch (DecoderFallbackException exception)

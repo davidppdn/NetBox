@@ -51,7 +51,7 @@ public static class Server
         {
             await using NetworkStream stream = handler.GetStream();
             byte[] buffer = new byte[1024];
-            var parser = new MessageParser();
+            var parser = new OldMessageParser();
             while (true)
             {
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);

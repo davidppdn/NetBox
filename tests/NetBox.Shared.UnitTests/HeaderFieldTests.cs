@@ -10,7 +10,7 @@ public class HeaderFieldTests
     [Fact]
     public void Serialize_ProducesExpectedByteLayout()
     {
-        var hf = new HeaderField(HeaderFieldIdEnum.Username, "alice");
+        var hf = new OldHeaderField(OldHeaderFieldIdEnum.Username, "alice");
         byte[] bytes = hf.Serialize();
         // Expected layout per current implementation:
         // [4 bytes] - Field Length (big-endian) = 4 (identifier) + N (value bytes)
@@ -20,7 +20,7 @@ public class HeaderFieldTests
         int fieldLength = 4 + valueBytes.Length; // identifier size + value size
         var expected = new byte[4 + 4 + valueBytes.Length];
         BinaryPrimitives.WriteInt32BigEndian(expected.AsSpan(0,4), fieldLength);
-        BinaryPrimitives.WriteInt32BigEndian(expected.AsSpan(4,4), (int)HeaderFieldIdEnum.Username);
+        BinaryPrimitives.WriteInt32BigEndian(expected.AsSpan(4,4), (int)OldHeaderFieldIdEnum.Username);
         Buffer.BlockCopy(valueBytes, 0, expected, 8, valueBytes.Length);
 
         Assert.Equal(expected, bytes);
@@ -30,17 +30,17 @@ public class HeaderFieldTests
     public void Deserialize_ValidData_ReturnsHeaderField()
     {
         // use Serialize to produce valid data
-        var original = new HeaderField(HeaderFieldIdEnum.Command, "RUN");
+        var original = new OldHeaderField(OldHeaderFieldIdEnum.Command, "RUN");
         var data = original.Serialize();
         // Deserialize expects the payload without the 4-byte length prefix
         var payload = new byte[data.Length - 4];
         Buffer.BlockCopy(data, 4, payload, 0, payload.Length);
 
-        bool ok = HeaderField.Deserialize(payload, out var parsed);
+        bool ok = OldHeaderField.Deserialize(payload, out var parsed);
 
         Assert.True(ok);
         Assert.NotNull(parsed);
-        Assert.Equal(HeaderFieldIdEnum.Command, parsed!.Id);
+        Assert.Equal(OldHeaderFieldIdEnum.Command, parsed!.Id);
         Assert.Equal("RUN", parsed.Value);
     }
 
@@ -51,7 +51,7 @@ public class HeaderFieldTests
         var buf = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), 99);
 
-        bool ok = HeaderField.Deserialize(buf, out var parsed);
+        bool ok = OldHeaderField.Deserialize(buf, out var parsed);
         Assert.False(ok);
         Assert.Null(parsed);
     }
@@ -62,9 +62,9 @@ public class HeaderFieldTests
     {
         // For current Deserialize semantics, a zero-length value means the buffer contains only the identifier
         var buf = new byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), (int)HeaderFieldIdEnum.Username);
+        BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), (int)OldHeaderFieldIdEnum.Username);
 
-        bool ok = HeaderField.Deserialize(buf, out var parsed);
+        bool ok = OldHeaderField.Deserialize(buf, out var parsed);
         Assert.True(ok);
         Assert.NotNull(parsed);
         Assert.Equal(string.Empty, parsed!.Value);
@@ -76,10 +76,10 @@ public class HeaderFieldTests
         // Construct a buffer with a valid id and invalid UTF-8 bytes (0xFF bytes)
         var valueBytes = new byte[] { 0xFF, 0xFF };
         var buf = new byte[4 + valueBytes.Length];
-        BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), (int)HeaderFieldIdEnum.Command);
+        BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), (int)OldHeaderFieldIdEnum.Command);
         Buffer.BlockCopy(valueBytes, 0, buf, 4, valueBytes.Length);
 
-        bool ok = HeaderField.Deserialize(buf, out var parsed);
+        bool ok = OldHeaderField.Deserialize(buf, out var parsed);
         // We expect the deserializer to detect invalid UTF-8 and fail
         Assert.False(ok);
         Assert.Null(parsed);

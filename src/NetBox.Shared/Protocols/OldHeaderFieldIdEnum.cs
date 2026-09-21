@@ -8,7 +8,7 @@ namespace NetBox.Shared.Protocols;
 /// An enumeration representing the identifiers for the header fields
 /// in the protocol.
 /// </summary>
-public enum HeaderFieldIdEnum
+public enum OldHeaderFieldIdEnum
 {
     Command = 0,
     Username = 1,

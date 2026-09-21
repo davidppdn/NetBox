@@ -5,18 +5,18 @@ using System.Text;
 
 namespace NetBox.Shared.Protocols;
 
-public class Header
+public class OldHeader
 {
     private const int fieldCountByteSize = 4;
     private const int headerLengthByteSize = 4;
 
-    private List<HeaderField> _fields = new List<HeaderField>();
+    private List<OldHeaderField> _fields = new List<OldHeaderField>();
 
-    public Header()
+    public OldHeader()
     {
     }
 
-    public void AddField(HeaderField field)
+    public void AddField(OldHeaderField field)
     {
         if (field == null)
             throw new ArgumentNullException(nameof(field));
@@ -71,7 +71,7 @@ public class Header
     /// <param name="data"></param>
     /// <param name="header"></param>
     /// <returns></returns>
-    public static bool Deserialize(byte[] data, out Header? header)
+    public static bool Deserialize(byte[] data, out OldHeader? header)
     {
         header = null;
 
@@ -83,7 +83,7 @@ public class Header
         if (fieldCount < 0)
             return false;
 
-        header = new Header();
+        header = new OldHeader();
         if (fieldCount == 0)
             return true;
 
@@ -108,7 +108,7 @@ public class Header
 
                 var headerFieldBytes = remainingData.Slice(fieldLengthByteEndIndex, fieldLength).ToArray();
 
-                if (HeaderField.Deserialize(headerFieldBytes, out var headerField))
+                if (OldHeaderField.Deserialize(headerFieldBytes, out var headerField))
                 {
                     if (headerField == null)
                     {
