@@ -10,10 +10,11 @@ public class MessageParser
     {
     }
 
-    public List<Message> ParseBytes(byte[] data)
+    public List<Message> ParseBytes(byte[] data, int bytesRead)
     {
         var messages = new List<Message>();
-        _buffer.AddRange(data);
+        var readData = data.AsSpan(0, bytesRead);
+        _buffer.AddRange(readData);
 
         while (true)
         {

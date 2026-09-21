@@ -15,7 +15,7 @@ public class MessageParserTests
         var bytes = original.Serialize();
 
         var parser = new MessageParser();
-        var messages = parser.ParseBytes(bytes);
+        var messages = parser.ParseBytes(bytes, bytes.Length);
 
         Assert.Single(messages);
         var reparsed = messages[0].Serialize();
@@ -40,7 +40,7 @@ public class MessageParserTests
         Buffer.BlockCopy(b2, 0, concat, b1.Length, b2.Length);
 
         var parser = new MessageParser();
-        var messages = parser.ParseBytes(concat);
+        var messages = parser.ParseBytes(concat, concat.Length);
 
         Assert.Equal(2, messages.Count);
         Assert.Equal(b1, messages[0].Serialize());
@@ -63,10 +63,10 @@ public class MessageParserTests
         Buffer.BlockCopy(bytes, p1.Length, p2, 0, p2.Length);
 
         var parser = new MessageParser();
-        var m1 = parser.ParseBytes(p1);
+        var m1 = parser.ParseBytes(p1, p1.Length);
         Assert.Empty(m1);
 
-        var m2 = parser.ParseBytes(p2);
+        var m2 = parser.ParseBytes(p2, p2.Length);
         Assert.Single(m2);
         Assert.Equal(bytes, m2[0].Serialize());
     }
@@ -80,7 +80,7 @@ public class MessageParserTests
         buf[4] = 0x00;
 
         var parser = new MessageParser();
-        Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf));
+        Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf, buf.Length));
     }
 
     [Fact]
@@ -92,6 +92,6 @@ public class MessageParserTests
         buf[4] = 0x01;
 
         var parser = new MessageParser();
-        Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf));
+        Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf, buf.Length));
     }
 }

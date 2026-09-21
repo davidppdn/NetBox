@@ -24,6 +24,11 @@ public class Message
         _payload = Encoding.UTF8.GetBytes(payload);
     }
 
+    public string GetMessage()
+    {
+        return Encoding.UTF8.GetString(_payload);
+    }
+
     /// <summary>
     /// Serializes a message according to the following structure:
     /// [4 bytes] - Length of whole message not including these 4 bytes.

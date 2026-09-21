@@ -5,12 +5,9 @@ using NetBox.Shared.Protocols;
 
 public static class Server
 {
-    // The IP address and port the server will listen on.
     private static readonly IPAddress IpAddress = IPAddress.Loopback;
     private static readonly int Port = 5000;
 
-    // List for keeping track of connected clients. Needs resource lock since it is shared
-    // between multiple concurrent connection handlers.
     private static readonly List<TcpClient> ConnectedClients = new List<TcpClient>();
     private static readonly object ClientsLock = new object();
 
@@ -66,8 +63,10 @@ public static class Server
                 var receivedMessages = parser.ParseBytes(buffer, bytesRead);
                 foreach (var message in receivedMessages)
                 {
-                    Console.WriteLine($"Received message: {message.Content}");
-                    await BroadcastMessage(message.Content);
+                    if (message == null) continue;
+
+                    Console.WriteLine($"Received message: {message.GetMessage()}");
+                    //await BroadcastMessage(message.Content);
                 }
             }
         }
@@ -86,21 +85,21 @@ public static class Server
         }
     }
 
-    private static async Task BroadcastMessage(string message)
-    {
-        byte[] messageBytes = new Message(message).ToBytes();
+    //private static async Task BroadcastMessage(string message)
+    //{
+    //    byte[] messageBytes = new Message(message).ToBytes();
 
-        var clientListCopy = new List<TcpClient>();
+    //    var clientListCopy = new List<TcpClient>();
        
-        lock (ClientsLock)
-        {
-            clientListCopy.AddRange(ConnectedClients);
-        }
+    //    lock (ClientsLock)
+    //    {
+    //        clientListCopy.AddRange(ConnectedClients);
+    //    }
 
-        foreach (var client in clientListCopy)
-        {
-            var stream = client.GetStream();
-            await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
-        }
-    }
+    //    foreach (var client in clientListCopy)
+    //    {
+    //        var stream = client.GetStream();
+    //        await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
+    //    }
+    //}
 }
