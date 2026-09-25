@@ -1,142 +1,219 @@
-﻿using System.Buffers.Binary;
+﻿using NetBox.Shared.Protocols.Enums;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace NetBox.Shared.Protocols;
 
+/// <summary>
+/// Class: Message
+/// Purpose: To serialize and deserialize the following protocol structure:
+/// [4 bytes] - Command Id      Integer
+/// [4 bytes] - Header Length   ( count in bytes )
+/// [N bytes] - Header
+/// [4 bytes] - Payload Length  ( count in bytes )
+/// [M bytes] - Payload         ( strictly UTF-8 ) ( optional )
+/// </summary>
 public class Message
 {
-    private const int MessageLengthByteLength = 4;
-    private Header _header { get; } = new Header();
-    private byte[] _payload { get; } = Array.Empty<byte>();
+    private Command _command;
+    private Header _header;
+    private string? _payload;
 
-    /// <summary>
-    /// Constructor with Header and payload.
-    /// Payload for ease of use should be just strin, which gets converted to UT8.
-    /// </summary>
-    /// <param name="header"></param>
-    /// <param name="payload"></param>
-    public Message(Header header, string payload)
+    public Message(Command command, Header header, string? payload = null)
     {
-        ArgumentNullException.ThrowIfNull(header);
-        ArgumentNullException.ThrowIfNull(payload);
-
+        _command = command;
         _header = header;
-        _payload = Encoding.UTF8.GetBytes(payload);
-    }
-
-    public string GetMessage()
-    {
-        return Encoding.UTF8.GetString(_payload);
+        _payload = payload;
     }
 
     /// <summary>
-    /// Serializes a message according to the following structure:
-    /// [4 bytes] - Length of whole message not including these 4 bytes.
-    /// [N bytes] - Header <see cref="Header"/>
-    /// [4 bytes] - Payload Length
-    /// [M bytes] - Payload
+    /// Serialize the message into the following structure:
+    /// [4 bytes] - Message length ( not including these 4 bytes]
+    /// [4 bytes] - Command Id
+    /// [4 bytes] - Header Length   ( count in bytes )
+    /// [N bytes] - Header
+    /// [4 bytes] - Payload Length  ( count in bytes )
+    /// [M bytes] - Payload         ( strictly UTF-8 ) ( optional )
     /// </summary>
     /// <returns></returns>
     public byte[] Serialize()
     {
-        var serializedHeader = _header.Serialize();
+        var headerSerialized = _header.Serialize();
+        var payloadSerialized = _payload != null ? Encoding.UTF8.GetBytes(_payload) : null;
 
-        byte[] payloadLength = new byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(payloadLength, _payload.Length);
+        var messageLengthBytes = 4;
+        var commandIdLengthBytes = 4;
+        var headerLengthBytes = 4;
+        var headerBytes = headerSerialized.Length;
+        var payloadLengthBytes = 4;
+        var payloadLength = payloadSerialized != null ? payloadSerialized.Length : 0;
 
-        var totalMessageLength = serializedHeader.Length + payloadLength.Length + _payload.Length;
-        byte[] messageLength = new byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(messageLength, totalMessageLength);
+        /// messagelengthbytes not included in message length
+        var messageLength = commandIdLengthBytes
+                            + headerLengthBytes
+                            + headerBytes
+                            + payloadLengthBytes
+                            + payloadLength;
 
-        byte[] result = new byte[MessageLengthByteLength + totalMessageLength];
+        var writer = new ArrayBufferWriter<byte>();
 
-        Buffer.BlockCopy(messageLength, 0, result, 0, messageLength.Length);
-        Buffer.BlockCopy(serializedHeader, 0, result, messageLength.Length, serializedHeader.Length);
-        Buffer.BlockCopy(payloadLength, 0, result, messageLength.Length + serializedHeader.Length, payloadLength.Length);
-        Buffer.BlockCopy(_payload, 0, result, messageLength.Length + serializedHeader.Length + payloadLength.Length, _payload.Length);
+        var messageLengthSpan = writer.GetSpan(messageLengthBytes);
+        BinaryPrimitives.WriteInt32BigEndian(messageLengthSpan, messageLength);
+        writer.Advance(messageLengthBytes);
 
-        return result;
+        var commandIdSpan = writer.GetSpan(commandIdLengthBytes);
+        BinaryPrimitives.WriteInt32BigEndian(commandIdSpan, (int)_command);
+        writer.Advance(commandIdLengthBytes);
+
+        var headerLengthSpan = writer.GetSpan(headerLengthBytes);
+        BinaryPrimitives.WriteInt32BigEndian(headerLengthSpan, headerSerialized.Length);
+        writer.Advance(headerLengthBytes);
+
+        var headerSpan = writer.GetSpan(headerBytes);
+        headerSerialized.CopyTo(headerSpan);
+        writer.Advance(headerBytes);
+
+        var payloadLengthSpan = writer.GetSpan(payloadLengthBytes);
+        BinaryPrimitives.WriteInt32BigEndian(payloadLengthSpan, payloadLength);
+        writer.Advance(payloadLengthBytes);
+
+        if (payloadLength > 0 && payloadSerialized != null)
+        {
+            var payloadSpan = writer.GetSpan(payloadLength);
+            payloadSerialized.CopyTo(payloadSpan);
+            writer.Advance(payloadLength);
+        }
+
+        return writer.WrittenMemory.ToArray();
     }
 
+
     /// <summary>
-    /// Deserializes message, not including the initial 4 bytes for message length.
+    /// Deserialize a span of bytes into a single message according to the following shape:
+    /// [4 bytes] - Command Id      Integer
+    /// [4 bytes] - Header Length   ( count in bytes )
+    /// [N bytes] - Header
+    /// [4 bytes] - Payload Length  ( count in bytes )
+    /// [M bytes] - Payload         ( strictly UTF-8 string ) ( optional )
     /// </summary>
     /// <param name="data"></param>
     /// <param name="message"></param>
-    /// <returns></returns>
-    public static bool Deserialize(byte[] data, out Message? message)
+    /// <returns>
+    /// Returns false if the data is correct, but incomplete.
+    /// Returns true if the data is complete and correct.
+    /// Throws error if data is incorrect.
+    /// </returns>
+    public static bool Deserialize(
+        ReadOnlySpan<byte> data, 
+        [NotNullWhen(true)]out Message? message)
     {
-        try
-        {
-            message = null;
+        message = null;
 
-            if (data.Length < 4)
+        try 
+        {
+            // Command Id
+            int pt = 0;
+            int length = 4;
+            if (data.Length < pt + length)
             {
-                Console.WriteLine("Data bytes less than 4");
                 return false;
             }
 
-            var headerLength = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(0, 4));
+            var commandId = BinaryPrimitives.ReadInt32BigEndian(data.Slice(pt, length));
+            if (!Enum.IsDefined(typeof(Command), commandId))
+            {
+                throw new InvalidDataException($"There is not corresponding command for commandId: {commandId}");
+            }
+
+            var command = (Command)commandId;
+
+            // Header Length
+            pt += length;
+            length = 4;
+            if (data.Length < pt + length)
+            {
+                return false;
+            }
+
+            var headerLength = BinaryPrimitives.ReadInt32BigEndian(data.Slice(pt, length));
             if (headerLength < 0)
             {
-                Console.WriteLine("Invalid header length: " + headerLength);
-                return false;
+                throw new InvalidDataException($"Invalid header length value: {headerLength}");
             }
 
-            if (data.Length - 4 < headerLength)
-            {
-                Console.WriteLine("Malformed header");
-                return false;
-            }
-
-            var headerBytes = data.AsSpan(4, headerLength).ToArray();
-
-            if (!Header.Deserialize(headerBytes, out var header) || header == null)
+            // Header
+            pt += length;
+            length = headerLength;
+            if (data.Length < pt + length)
             {
                 return false;
             }
 
-            if (data.Length - 4 - headerLength < 4)
+            var headerData = data.Slice(pt, length);
+            if (!Header.Deserialize(headerData, out var header))
             {
-                Console.WriteLine("Malformed payload");
                 return false;
             }
 
-            var payloadSection = data.AsSpan(4 + headerBytes.Length).ToArray();
-            var payloadLength = BinaryPrimitives.ReadInt32BigEndian(payloadSection.AsSpan(0, 4));
+            // Payload Length
+            pt += length;
+            length = 4;
+            if (data.Length < pt + length)
+            {
+                return false;
+            }
+
+            var payloadLength = BinaryPrimitives.ReadInt32BigEndian(data.Slice(pt, length));
             if (payloadLength < 0)
             {
-                Console.WriteLine("Invalid payload length: " + payloadLength);
-                return false;
+                throw new InvalidDataException($"Invalid payload length value: {payloadLength}");
             }
 
-            if (payloadSection.Length - 4 != payloadLength)
+            if (payloadLength == 0)
             {
-                Console.WriteLine($"Payload lengths do not match. Expected: {payloadLength}  Actual: {payloadSection.Length - 4}");
+                pt += length;
+
+                if (data.Length != pt)
+                {
+                    throw new InvalidDataException(
+                        $"Unexpected trailing data: {data.Length - pt} bytes.");
+                }
+
+                message = new Message(command, header);
+                return true;
+            }
+
+            // Payload
+            pt += length;
+            length = payloadLength;
+            if (data.Length < pt + length)
+            {
                 return false;
             }
 
-            var payloadBytes = payloadSection.AsSpan(4, payloadLength);
+            if (data.Length > pt + length)
+            {
+                throw new InvalidDataException($"Payload Length and length of data do not match. Expected: {payloadLength} Actual: {data.Length - pt}");
+            }
 
+            var payloadBytes = data.Slice(pt, length);
             var utf8StrictEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
             var payload = utf8StrictEncoding.GetString(payloadBytes);
 
-            message = new Message(header, payload);
+            message = new Message(command, header, payload);
             return true;
         }
         catch (DecoderFallbackException exception)
         {
-            Console.WriteLine("Failed to decode message. Data: " + exception.BytesUnknown);
-            message = null;
-            return false;
+            Console.WriteLine($"Failed to decode the payload into UTF8: {exception.BytesUnknown}");
+            throw;
         }
-    }
-
-    public void PrintString()
-    {
-        Console.WriteLine("Header:");
-        Console.WriteLine(_header.ToString());
-        Console.WriteLine("Payload:");
-        Console.WriteLine(GetMessage());
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Failed to deserialize the message: {exception.Message}");
+            throw;
+        }
     }
 }

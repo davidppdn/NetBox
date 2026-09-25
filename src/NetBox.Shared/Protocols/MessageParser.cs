@@ -2,17 +2,17 @@
 
 namespace NetBox.Shared.Protocols;
 
-public class OldMessageParser
+public class MessageParser
 {
     private readonly List<byte> _buffer = [];
 
-    public OldMessageParser()
+    public MessageParser()
     {
     }
 
-    public List<OldMessage> ParseBytes(byte[] data, int bytesRead)
+    public List<Message> ParseBytes(byte[] data, int bytesRead)
     {
-        var messages = new List<OldMessage>();
+        var messages = new List<Message>();
         var readData = data.AsSpan(0, bytesRead);
         _buffer.AddRange(readData);
 
@@ -39,7 +39,7 @@ public class OldMessageParser
             }
 
             var messageBytes = buffer.AsSpan(4, messageLength);
-            if (!OldMessage.Deserialize(messageBytes.ToArray(), out var message))
+            if (!Message.Deserialize(messageBytes.ToArray(), out var message))
             {
                 throw new InvalidDataException("Failed to deserialize a message");
             }
