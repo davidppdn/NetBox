@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
+using System.Text;
 using NetBox.Shared.Protocols;
+using NetBox.Shared.Protocols.Enums;
 using Xunit;
 
 namespace NetBox.Shared.UnitTests;
@@ -9,12 +11,11 @@ public class MessageParserTests
     [Fact]
     public void ParseBytes_SingleCompleteMessage_ReturnsMessage()
     {
-        var header = new OldHeader();
-        header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Username, "alice"));
-        var original = new OldMessage(header, "hello");
+        var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("alice")) });
+        var original = new Message(Command.LOGIN, header, "hello");
         var bytes = original.Serialize();
 
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
         var messages = parser.ParseBytes(bytes, bytes.Length);
 
         Assert.Single(messages);
@@ -25,13 +26,11 @@ public class MessageParserTests
     [Fact]
     public void ParseBytes_MultipleMessagesInSingleBuffer_ReturnsAllMessages()
     {
-        var header1 = new OldHeader();
-        header1.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Username, "a"));
-        var m1 = new OldMessage(header1, "one");
+        var header1 = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("a")) });
+        var m1 = new Message(Command.LOGIN, header1, "one");
 
-        var header2 = new OldHeader();
-        header2.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Username, "b"));
-        var m2 = new OldMessage(header2, "two");
+        var header2 = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("b")) });
+        var m2 = new Message(Command.LOGIN, header2, "two");
 
         var b1 = m1.Serialize();
         var b2 = m2.Serialize();
@@ -39,7 +38,7 @@ public class MessageParserTests
         Buffer.BlockCopy(b1, 0, concat, 0, b1.Length);
         Buffer.BlockCopy(b2, 0, concat, b1.Length, b2.Length);
 
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
         var messages = parser.ParseBytes(concat, concat.Length);
 
         Assert.Equal(2, messages.Count);
@@ -50,9 +49,8 @@ public class MessageParserTests
     [Fact]
     public void ParseBytes_PartialMessageAcrossCalls_ReturnsCombinedMessage()
     {
-        var header = new OldHeader();
-        header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Username, "x"));
-        var msg = new OldMessage(header, "partial");
+        var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("x")) });
+        var msg = new Message(Command.LOGIN, header, "partial");
         var bytes = msg.Serialize();
 
         // split into two parts
@@ -62,7 +60,7 @@ public class MessageParserTests
         Buffer.BlockCopy(bytes, 0, p1, 0, p1.Length);
         Buffer.BlockCopy(bytes, p1.Length, p2, 0, p2.Length);
 
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
         var m1 = parser.ParseBytes(p1, p1.Length);
         Assert.Empty(m1);
 
@@ -79,7 +77,7 @@ public class MessageParserTests
         BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), -1);
         buf[4] = 0x00;
 
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
         Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf, buf.Length));
     }
 
@@ -91,7 +89,7 @@ public class MessageParserTests
         BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), 1);
         buf[4] = 0x01;
 
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
         Assert.Throws<InvalidDataException>(() => parser.ParseBytes(buf, buf.Length));
     }
 }

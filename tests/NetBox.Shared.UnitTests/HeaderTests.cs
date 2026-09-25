@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using NetBox.Shared.Protocols;
+using NetBox.Shared.Protocols.Enums;
 using Xunit;
 
 namespace NetBox.Shared.UnitTests;
@@ -10,16 +11,15 @@ public class HeaderTests
     [Fact]
     public void Deserialize_ValidHeader_ReturnsHeaderWithFields()
     {
-        var header = new OldHeader();
-        header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Username, "alice"));
-        header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Command, "RUN"));
+        var header = new Header(new List<HeaderField>
+        {
+            new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("alice")),
+            new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("RUN"))
+        });
 
         var bytes = header.Serialize();
-        // Serialize includes a 4-byte total header length prefix; Header.Deserialize expects the payload after that prefix
-        var payload = new byte[bytes.Length - 4];
-        Buffer.BlockCopy(bytes, 4, payload, 0, payload.Length);
-
-        bool ok = OldHeader.Deserialize(payload, out var parsed);
+        // Header.Serialize returns the header bytes starting with the field count. Pass them directly to Deserialize.
+        bool ok = Header.Deserialize(bytes, out var parsed);
 
         Assert.True(ok);
         Assert.NotNull(parsed);
@@ -29,19 +29,22 @@ public class HeaderTests
         // reparsed bytes include a header length prefix; compare the payload portions
         var reparsedPayload = new byte[reparsedBytes.Length - 4];
         Buffer.BlockCopy(reparsedBytes, 4, reparsedPayload, 0, reparsedPayload.Length);
-        Assert.Equal(payload, reparsedPayload);
+        // original header bytes (bytes) start with the field count; compare the payload portions
+        var originalPayload = new byte[bytes.Length - 4];
+        Buffer.BlockCopy(bytes, 4, originalPayload, 0, originalPayload.Length);
+        Assert.Equal(originalPayload, reparsedPayload);
     }
 
     [Fact]
     public void Deserialize_EmptyOrTooShort_ReturnsFalse()
     {
         var empty = new byte[0];
-        bool ok = OldHeader.Deserialize(empty, out var parsed);
+        bool ok = Header.Deserialize(empty, out var parsed);
         Assert.False(ok);
         Assert.Null(parsed);
 
         var shortBuf = new byte[2];
-        ok = OldHeader.Deserialize(shortBuf, out parsed);
+        ok = Header.Deserialize(shortBuf, out parsed);
         Assert.False(ok);
         Assert.Null(parsed);
     }
@@ -50,14 +53,14 @@ public class HeaderTests
     public void Deserialize_FieldCountMismatch_ReturnsFalse()
     {
         // Build data with fieldCount = 2 but only include one field's bytes
-        var hf = new OldHeaderField(OldHeaderFieldIdEnum.Username, "bob");
+        var hf = new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("bob"));
         var fieldBytes = hf.Serialize();
 
         var buf = new byte[4 + fieldBytes.Length];
         BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), 2); // fieldCount=2
         Buffer.BlockCopy(fieldBytes, 0, buf, 4, fieldBytes.Length);
 
-        bool ok = OldHeader.Deserialize(buf, out var parsed);
+        bool ok = Header.Deserialize(buf, out var parsed);
         Assert.False(ok);
         Assert.Null(parsed);
     }
@@ -77,17 +80,15 @@ public class HeaderTests
         BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(0,4), 1); // fieldCount=1
         Buffer.BlockCopy(field, 0, buf, 4, field.Length);
 
-        bool ok = OldHeader.Deserialize(buf, out var parsed);
-        Assert.False(ok);
-        Assert.Null(parsed);
+        Assert.Throws<InvalidDataException>(() => Header.Deserialize(buf, out var _));
     }
 
     [Fact]
     public void Deserialize_DuplicateFieldIds_ReturnsFalse()
     {
         // Two fields with the same id should cause AddField to throw and Deserialize to fail
-        var hf1 = new OldHeaderField(OldHeaderFieldIdEnum.Username, "a");
-        var hf2 = new OldHeaderField(OldHeaderFieldIdEnum.Username, "b");
+        var hf1 = new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("a"));
+        var hf2 = new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("b"));
         var b1 = hf1.Serialize();
         var b2 = hf2.Serialize();
 
@@ -96,7 +97,7 @@ public class HeaderTests
         Buffer.BlockCopy(b1, 0, buf, 4, b1.Length);
         Buffer.BlockCopy(b2, 0, buf, 4 + b1.Length, b2.Length);
 
-        bool ok = OldHeader.Deserialize(buf, out var parsed);
+        bool ok = Header.Deserialize(buf, out var parsed);
         Assert.False(ok);
         Assert.Null(parsed);
     }

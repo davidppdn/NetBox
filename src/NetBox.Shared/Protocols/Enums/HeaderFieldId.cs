@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NetBox.Shared.Protocols.Enums;
+﻿namespace NetBox.Shared.Protocols.Enums;
 
 public enum HeaderFieldId
 {

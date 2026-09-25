@@ -15,7 +15,7 @@ namespace NetBox.Shared.Protocols;
 public class HeaderField
 {
     public HeaderFieldId Id { get; private set; }
-    public ReadOnlyMemory<byte> Value { get; private set; }
+    public byte[] Value { get; private set; }
 
     public HeaderField(HeaderFieldId id, byte[] value)
     {
@@ -36,7 +36,7 @@ public class HeaderField
         var bytes = new byte[length];
 
         BinaryPrimitives.WriteInt32BigEndian(bytes, (int)Id);
-        Value.CopyTo(bytes);
+        Value.CopyTo(bytes, 4);
 
         return bytes;
     }
