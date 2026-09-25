@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using NetBox.Shared.Protocols;
 
 public static class Server
@@ -51,7 +50,7 @@ public static class Server
         {
             await using NetworkStream stream = handler.GetStream();
             byte[] buffer = new byte[1024];
-            var parser = new OldMessageParser();
+            var parser = new MessageParser();
             while (true)
             {
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
@@ -65,7 +64,7 @@ public static class Server
                 {
                     if (message == null) continue;
 
-                    message.PrintString();
+                    Console.WriteLine(message.ToString());
                     //await BroadcastMessage(message.Content);
                 }
             }

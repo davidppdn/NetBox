@@ -1,6 +1,7 @@
 ﻿using NetBox.Shared.Protocols.Enums;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace NetBox.Shared.Protocols;
 
@@ -21,6 +22,12 @@ public class HeaderField
     {
         this.Id = id;
         this.Value = value;
+    }
+
+    public HeaderField(HeaderFieldId id, string value)
+    {
+        this.Id = id;
+        this.Value = Encoding.UTF8.GetBytes(value);
     }
 
     /// <summary>

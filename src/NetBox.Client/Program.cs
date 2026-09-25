@@ -1,4 +1,5 @@
 ﻿using NetBox.Shared.Protocols;
+using NetBox.Shared.Protocols.Enums;
 using System.Net.Sockets;
 
 public static class Client
@@ -31,9 +32,11 @@ public static class Client
             Console.WriteLine("Login with username:");
             string username = Console.ReadLine();
 
-            var header = new OldHeader();
-            header.AddField(new OldHeaderField(OldHeaderFieldIdEnum.Command, "LOGIN"));
-            var message = new OldMessage(header, username);
+            List<HeaderField> fields = new();
+            fields.Add(new HeaderField(HeaderFieldId.RESPONSE_CODE, "200"));
+
+            var header = new Header(fields);
+            var message = new Message(Command.LOGIN, header, username);
 
             byte[] data = message.Serialize();
             await stream.WriteAsync(data, 0, data.Length);
@@ -64,7 +67,7 @@ public static class Client
     private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken)
     {
         byte[] buffer = new byte[1024];
-        var parser = new OldMessageParser();
+        var parser = new MessageParser();
 
         try
         {
@@ -76,11 +79,11 @@ public static class Client
                     Console.WriteLine("Server disconnected.");
                     break;
                 }
-                List<OldMessage> messages = parser.ParseBytes(buffer, bytesRead);
+                List<Message> messages = parser.ParseBytes(buffer, bytesRead);
 
                 foreach (var msg in messages)
                 {
-                    Console.WriteLine($"Received: {msg.GetMessage()}");
+                    Console.WriteLine($"Received: {msg.ToString()}");
                 }
             }
         }
