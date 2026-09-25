@@ -17,15 +17,15 @@ namespace NetBox.Shared.Protocols;
 /// </summary>
 public class Message
 {
-    private Command _command;
-    private Header _header;
-    private string? _payload;
+    public Command Command { get; }
+    public Header Header { get; }
+    public string? Payload { get; }
 
     public Message(Command command, Header header, string? payload = null)
     {
-        _command = command;
-        _header = header;
-        _payload = payload;
+        Command = command;
+        Header = header;
+        Payload = payload;
     }
 
     /// <summary>
@@ -40,8 +40,8 @@ public class Message
     /// <returns></returns>
     public byte[] Serialize()
     {
-        var headerSerialized = _header.Serialize();
-        var payloadSerialized = _payload != null ? Encoding.UTF8.GetBytes(_payload) : null;
+        var headerSerialized = Header.Serialize();
+        var payloadSerialized = Payload != null ? Encoding.UTF8.GetBytes(Payload) : null;
 
         var messageLengthBytes = 4;
         var commandIdLengthBytes = 4;
@@ -64,7 +64,7 @@ public class Message
         writer.Advance(messageLengthBytes);
 
         var commandIdSpan = writer.GetSpan(commandIdLengthBytes);
-        BinaryPrimitives.WriteInt32BigEndian(commandIdSpan, (int)_command);
+        BinaryPrimitives.WriteInt32BigEndian(commandIdSpan, (int)Command);
         writer.Advance(commandIdLengthBytes);
 
         var headerLengthSpan = writer.GetSpan(headerLengthBytes);
