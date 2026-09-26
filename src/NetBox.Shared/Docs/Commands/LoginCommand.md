@@ -12,6 +12,6 @@ Payload:
 
 Response:
 Additional Headers:
-- ResponseCode: SUCCESS | FAIL
+- ResponseCode: 4 bytes, 0 ( fail ) | 1 ( success )
 Payload:
 - None

@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Docs\Commands\" />
-    <Folder Include="Responses\" />
   </ItemGroup>
 
 </Project>
