@@ -57,7 +57,7 @@ Message contains the following:
 [N bytes] - Payload
 
 Accepted: [v]
-Implemented: [>]
+Implemented: [v]
 
 ## Proposed changes 21/9/2026
 To ensure the message structure remains consistent and easy to parse, the header is mandatory
@@ -68,4 +68,4 @@ The payload may be omited if command does not need it, but the length should be 
 length check purposes.
 
 Accepted: [v]
-Implemented: [>]
+Implemented: [v]

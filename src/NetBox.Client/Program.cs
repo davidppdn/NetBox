@@ -1,5 +1,7 @@
 ﻿using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
+using NetBox.Shared.Requests;
+using NetBox.Shared.Responses;
 using System.Net.Sockets;
 
 public static class Client
@@ -32,13 +34,9 @@ public static class Client
             Console.WriteLine("Login with username:");
             string username = Console.ReadLine();
 
-            List<HeaderField> fields = new();
-            fields.Add(new HeaderField(HeaderFieldId.RESPONSE_CODE, "200"));
+            var loginRequest = new LoginRequest(username);
 
-            var header = new Header(fields);
-            var message = new Message(Command.LOGIN, header, username);
-
-            byte[] data = message.Serialize();
+            byte[] data = loginRequest.ToMessage().Serialize();
             await stream.WriteAsync(data, 0, data.Length);
 
             while (!cancellationToken.IsCancellationRequested)
@@ -83,7 +81,13 @@ public static class Client
 
                 foreach (var msg in messages)
                 {
-                    Console.WriteLine($"Received: {msg.ToString()}");
+                    if (msg.Command == Command.LOGIN)
+                    {
+                        if (LoginResponse.FromMessage(msg, out var loginResponse))
+                        {
+                            Console.WriteLine($"Login command: {loginResponse.ResponseCode}");
+                        }
+                    }
                 }
             }
         }

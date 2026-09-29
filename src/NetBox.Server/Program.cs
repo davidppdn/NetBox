@@ -1,14 +1,18 @@
-﻿using System.Net;
-using System.Net.Sockets;
+﻿using NetBox.Server.Models;
 using NetBox.Shared.Protocols;
+using NetBox.Shared.Protocols.Enums;
+using NetBox.Shared.Requests;
+using NetBox.Shared.Responses;
+using System.Net;
+using System.Net.Sockets;
 
 public static class Server
 {
     private static readonly IPAddress IpAddress = IPAddress.Loopback;
     private static readonly int Port = 5000;
 
-    private static readonly List<TcpClient> ConnectedClients = new List<TcpClient>();
-    private static readonly object ClientsLock = new object();
+    private static readonly List<ClientSession> ConnectedClients = [];
+    private static readonly object ClientsLock = new();
 
     public static async Task Main(string[] args)
     {
@@ -24,14 +28,15 @@ public static class Server
             while (true)
             {
                 TcpClient handler = await listener.AcceptTcpClientAsync();
+                var clientSession = new ClientSession(handler);
 
                 lock (ClientsLock)
                 {
-                    ConnectedClients.Add(handler);
+                    ConnectedClients.Add(clientSession);
                 }
 
                 Console.WriteLine("Client connected.");
-                _ = HandleConnection(handler);
+                _ = HandleConnection(clientSession);
             }            
         }
         catch (Exception ex)
@@ -44,11 +49,11 @@ public static class Server
         }
     }
 
-    private static async Task HandleConnection(TcpClient handler)
+    private static async Task HandleConnection(ClientSession clientSession)
     {
         try
         {
-            await using NetworkStream stream = handler.GetStream();
+            await using NetworkStream stream = clientSession.Client.GetStream();
             byte[] buffer = new byte[1024];
             var parser = new MessageParser();
             while (true)
@@ -64,8 +69,19 @@ public static class Server
                 {
                     if (message == null) continue;
 
-                    Console.WriteLine(message.ToString());
-                    //await BroadcastMessage(message.Content);
+                    if (message.Command == Command.LOGIN)
+                    {
+                        if (!LoginRequest.FromMessage(message, out var request))
+                        {
+                            throw new InvalidDataException("Login request command but not login request");
+                        }
+
+                        Console.WriteLine($"Login request from: {request.Username}");
+                        clientSession.SetUsername(request.Username);
+
+                        var loginResponse = new LoginResponse(LoginResponseCode.SUCCESS);
+                        await SendMessage(loginResponse.ToMessage(), clientSession);
+                    }
                 }
             }
         }
@@ -77,11 +93,19 @@ public static class Server
         {
             lock (ClientsLock)
             {
-                ConnectedClients.Remove(handler);
+                ConnectedClients.Remove(clientSession);
             }
 
-            handler.Close();
+            clientSession.Client.Close();
         }
+    }
+
+    private static async Task SendMessage(Message message, ClientSession session)
+    {
+        byte[] messageBytes = message.Serialize();
+
+        var stream = session.Client.GetStream();
+        await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
     }
 
     //private static async Task BroadcastMessage(string message)
