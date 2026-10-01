@@ -7,4 +7,5 @@ namespace NetBox.Shared.Protocols.Enums;
 public enum Command
 {
     LOGIN = 0,
+    SEND_MESSAGE = 1,
 }
