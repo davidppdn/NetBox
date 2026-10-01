@@ -10,3 +10,9 @@ public enum LoginResponseCode
     FAIL = 0,
     SUCCESS = 1,
 }
+
+public enum SendMessageResponseCode
+{
+    FAIL = 0,
+    SUCCESS = 1,
+}
