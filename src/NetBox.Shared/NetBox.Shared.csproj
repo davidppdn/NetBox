@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <Folder Include="Docs\Commands\" />
+    <Folder Include="Docs\ServerEvents\" />
+    <Folder Include="ServerEvents\" />
   </ItemGroup>
 
 </Project>
