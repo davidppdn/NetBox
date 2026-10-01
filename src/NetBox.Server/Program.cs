@@ -80,7 +80,7 @@ public static class Server
                         clientSession.SetUsername(request.Username);
 
                         var loginResponse = new LoginResponse(LoginResponseCode.SUCCESS);
-                        await SendMessage(loginResponse.ToMessage(), clientSession);
+                        await clientSession.SendMessage(loginResponse);
                     }
                 }
             }
@@ -98,14 +98,6 @@ public static class Server
 
             clientSession.Client.Close();
         }
-    }
-
-    private static async Task SendMessage(Message message, ClientSession session)
-    {
-        byte[] messageBytes = message.Serialize();
-
-        var stream = session.Client.GetStream();
-        await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
     }
 
     //private static async Task BroadcastMessage(string message)

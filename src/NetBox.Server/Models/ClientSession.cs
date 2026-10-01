@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using NetBox.Shared.Interfaces;
+using System.Net.Sockets;
 
 namespace NetBox.Server.Models;
 
@@ -16,5 +17,13 @@ internal record ClientSession(TcpClient Client)
     {
         ArgumentNullException.ThrowIfNull(username);
         Username = username;
+    }
+
+    public async Task SendMessage(IMessage message)
+    {
+        var msg = message.ToMessage();
+        var bytes = msg.Serialize();
+        var stream = Client.GetStream();
+        await stream.WriteAsync(bytes, 0, bytes.Length);
     }
 }

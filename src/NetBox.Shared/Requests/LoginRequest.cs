@@ -1,4 +1,5 @@
-﻿using NetBox.Shared.Protocols;
+﻿using NetBox.Shared.Interfaces;
+using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using System.Diagnostics.CodeAnalysis;
 
@@ -14,7 +15,7 @@ namespace NetBox.Shared.Requests;
 /// 
 /// See LoginCommand.md
 /// </summary>
-public class LoginRequest
+public class LoginRequest : IMessage
 {
     public string Username { get; }
 

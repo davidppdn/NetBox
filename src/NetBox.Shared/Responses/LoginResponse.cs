@@ -1,11 +1,12 @@
-﻿using NetBox.Shared.Protocols;
+﻿using NetBox.Shared.Interfaces;
+using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace NetBox.Shared.Responses;
 
-public class LoginResponse
+public class LoginResponse : IMessage
 {
     public LoginResponseCode ResponseCode { get; }
 
