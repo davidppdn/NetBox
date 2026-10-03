@@ -1,4 +1,5 @@
-﻿using NetBox.Server.Models;
+﻿using NetBox.Server.Handlers;
+using NetBox.Server.Models;
 using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
@@ -71,28 +72,14 @@ public static class Server
 
                     if (message.Command == Command.LOGIN)
                     {
-                        if (!LoginRequest.FromMessage(message, out var request))
-                        {
-                            throw new InvalidDataException("Login request command but not login request");
-                        }
-
-                        Console.WriteLine($"Login request from: {request.Username}");
-                        clientSession.SetUsername(request.Username);
-
-                        var loginResponse = new LoginResponse(LoginResponseCode.SUCCESS);
-                        await clientSession.SendMessage(loginResponse);
+                        var loginHandler = new LoginHandler();
+                        await loginHandler.Handle(message, clientSession);
                     }
 
                     if (message.Command == Command.SEND_MESSAGE)
                     {
-                        if (!SendMessageRequest.FromMessage(message, out var request))
-                        {
-                            throw new InvalidDataException("Send message request command but not send message request");
-                        }
-                        Console.WriteLine($"Message from {clientSession.Username}: {request.Message}");
-                        
-                        var sendMessageResponse = new SendMessageResponse(SendMessageResponseCode.SUCCESS);
-                        await clientSession.SendMessage(sendMessageResponse);
+                        var sendMessageHandler = new SendMessageHandler();
+                        await sendMessageHandler.Handle(message, clientSession);
                     }
                 }
             }
