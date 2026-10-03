@@ -105,6 +105,14 @@ public static class Client
                             loginTcs.TrySetResult(loginResponse.ResponseCode);
                         }
                     }
+
+                    if (msg.Command == Command.SEND_MESSAGE)
+                    {
+                        if (SendMessageResponse.FromMessage(msg, out var sendMessageResponse))
+                        {
+                            Console.WriteLine($"Server response: {sendMessageResponse.ResponseCode}");
+                        }
+                    }
                 }
             }
         }
