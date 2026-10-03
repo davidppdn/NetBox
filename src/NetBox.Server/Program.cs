@@ -82,6 +82,18 @@ public static class Server
                         var loginResponse = new LoginResponse(LoginResponseCode.SUCCESS);
                         await clientSession.SendMessage(loginResponse);
                     }
+
+                    if (message.Command == Command.SEND_MESSAGE)
+                    {
+                        if (!SendMessageRequest.FromMessage(message, out var request))
+                        {
+                            throw new InvalidDataException("Send message request command but not send message request");
+                        }
+                        Console.WriteLine($"Message from {clientSession.Username}: {request.Message}");
+                        
+                        var sendMessageResponse = new SendMessageResponse(SendMessageResponseCode.SUCCESS);
+                        await clientSession.SendMessage(sendMessageResponse);
+                    }
                 }
             }
         }

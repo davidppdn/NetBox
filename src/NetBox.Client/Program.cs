@@ -17,8 +17,10 @@ public static class Client
 
         using var stream = client.GetStream();
 
-        var readTask = HandleReads(stream, cts.Token);
-        var inputTask = HandleInput(stream, cts.Token);
+        var loginTcs = new TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var readTask = HandleReads(stream, cts.Token, loginTcs);
+        var inputTask = HandleInput(stream, cts.Token, loginTcs);
 
         await Task.WhenAny(readTask, inputTask);
         
@@ -27,7 +29,7 @@ public static class Client
         await Task.WhenAll(readTask, inputTask);
     }
 
-    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode> loginTcs)
     {
         try
         {
@@ -38,18 +40,31 @@ public static class Client
 
             byte[] data = loginRequest.ToMessage().Serialize();
             await stream.WriteAsync(data, 0, data.Length);
+            // Wait for login response (or cancellation)
+            var loginCode = await loginTcs.Task.WaitAsync(cancellationToken);
 
-            while (!cancellationToken.IsCancellationRequested)
+            if (loginCode == NetBox.Shared.Protocols.Enums.LoginResponseCode.SUCCESS)
             {
-                //Console.Write("Enter a message to send (or 'exit' to quit): ");
-                //string message = Console.ReadLine();
+                Console.WriteLine("Login successful. You can now send messages. Type '/logout' to exit.");
 
-                //if (message.ToLower() == "exit")
-                //    break;
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    Console.Write("Send message: ");
+                    var message = Console.ReadLine();
+                    if (message == null)
+                        break;
 
-                //Message netMessage = new(message);
-                //byte[] data = netMessage.ToBytes();
-                //await stream.WriteAsync(data, 0, data.Length, cancellationToken);
+                    if (message.Trim().Equals("/logout", StringComparison.OrdinalIgnoreCase))
+                        break;
+
+                    var sendReq = new SendMessageRequest(message);
+                    var sendData = sendReq.ToMessage().Serialize();
+                    await stream.WriteAsync(sendData, 0, sendData.Length, cancellationToken);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Login failed: {loginCode}");
             }
         }
         catch (OperationCanceledException)
@@ -62,7 +77,7 @@ public static class Client
         }
     }
 
-    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode> loginTcs)
     {
         byte[] buffer = new byte[1024];
         var parser = new MessageParser();
@@ -86,6 +101,8 @@ public static class Client
                         if (LoginResponse.FromMessage(msg, out var loginResponse))
                         {
                             Console.WriteLine($"Login command: {loginResponse.ResponseCode}");
+                            // Signal login result for input task
+                            loginTcs.TrySetResult(loginResponse.ResponseCode);
                         }
                     }
                 }
