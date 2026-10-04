@@ -18,7 +18,7 @@ public static class Client
 
         using var stream = client.GetStream();
 
-        var loginTcs = new TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var loginTcs = new TaskCompletionSource<LoginResponseCode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var readTask = HandleReads(stream, cts.Token, loginTcs);
         var inputTask = HandleInput(stream, cts.Token, loginTcs);
@@ -30,7 +30,7 @@ public static class Client
         await Task.WhenAll(readTask, inputTask);
     }
 
-    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode> loginTcs)
+    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<LoginResponseCode> loginTcs)
     {
         try
         {
@@ -44,7 +44,7 @@ public static class Client
             // Wait for login response (or cancellation)
             var loginCode = await loginTcs.Task.WaitAsync(cancellationToken);
 
-            if (loginCode == NetBox.Shared.Protocols.Enums.LoginResponseCode.SUCCESS)
+            if (loginCode == LoginResponseCode.SUCCESS)
             {
                 Console.WriteLine("Login successful. You can now send messages. Type '/logout' to exit.");
 
@@ -78,7 +78,7 @@ public static class Client
         }
     }
 
-    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<NetBox.Shared.Protocols.Enums.LoginResponseCode> loginTcs)
+    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<LoginResponseCode> loginTcs)
     {
         byte[] buffer = new byte[1024];
         var parser = new MessageParser();
@@ -101,8 +101,6 @@ public static class Client
                     {
                         if (LoginResponse.FromMessage(msg, out var loginResponse))
                         {
-                            Console.WriteLine($"Login command: {loginResponse.ResponseCode}");
-                            // Signal login result for input task
                             loginTcs.TrySetResult(loginResponse.ResponseCode);
                         }
                     }

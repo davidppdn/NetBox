@@ -48,7 +48,7 @@ public static class Server
 
     private static async Task HandleConnection(ClientSession clientSession)
     {
-        var loginHandler = new LoginHandler();
+        var loginHandler = new LoginHandler(SessionManager);
         var sendMessageHandler = new SendMessageHandler();
 
         try
