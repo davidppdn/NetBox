@@ -1,4 +1,6 @@
-﻿using NetBox.Server.Handlers;
+﻿using NetBox.Server;
+using NetBox.Server.Handlers;
+using NetBox.Server.Interfaces;
 using NetBox.Server.Models;
 using NetBox.Shared.Interfaces;
 using NetBox.Shared.Protocols;
@@ -10,9 +12,7 @@ public static class Server
 {
     private static readonly IPAddress IpAddress = IPAddress.Loopback;
     private static readonly int Port = 5000;
-
-    private static readonly List<ClientSession> ConnectedClients = [];
-    private static readonly object ClientsLock = new();
+    private static readonly ISessionManager SessionManager = new SessionManager();
 
     public static async Task Main(string[] args)
     {
@@ -30,10 +30,7 @@ public static class Server
                 TcpClient handler = await listener.AcceptTcpClientAsync();
                 var clientSession = new ClientSession(handler);
 
-                lock (ClientsLock)
-                {
-                    ConnectedClients.Add(clientSession);
-                }
+                SessionManager.Add(clientSession);
 
                 Console.WriteLine("Client connected.");
                 _ = HandleConnection(clientSession);
@@ -90,27 +87,19 @@ public static class Server
         {
             Console.WriteLine($"An error occurred while handling connection: {ex.Message}");
         }
-        finally
-        {
-            lock (ClientsLock)
+            finally
             {
-                ConnectedClients.Remove(clientSession);
-            }
+                SessionManager.Remove(clientSession);
 
-            clientSession.Client.Close();
-        }
+                clientSession.Client.Close();
+            }
     }
 
     private static async Task BroadcastMessage(IMessage message, ClientSession sender)
     {
         byte[] messageBytes = message.ToMessage().Serialize();
 
-        var clientSessionCopy = new List<ClientSession>();
-
-        lock (ClientsLock)
-        {
-            clientSessionCopy.AddRange(ConnectedClients);
-        }
+        var clientSessionCopy = SessionManager.GetAll();
 
         foreach (var client in clientSessionCopy)
         {
