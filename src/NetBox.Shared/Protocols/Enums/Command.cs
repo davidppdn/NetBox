@@ -8,4 +8,5 @@ public enum Command
 {
     LOGIN = 0,
     SEND_MESSAGE = 1,
+    CHAT_MESSAGE = 2,
 }

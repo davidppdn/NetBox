@@ -6,6 +6,6 @@ This command broadcasts a chat message to all connected clients, except the send
 
 Message:
 Additional Headers:
-- user (UTF-8 String) - The username of the sender
+- sender (UTF-8 String) - The username of the sender
 Payload:
 - message (UTF-8 String) - The content of the chat message

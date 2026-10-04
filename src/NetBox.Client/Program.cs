@@ -2,6 +2,7 @@
 using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
 using NetBox.Shared.Responses;
+using NetBox.Shared.ServerEvents;
 using System.Net.Sockets;
 
 public static class Client
@@ -111,6 +112,14 @@ public static class Client
                         if (SendMessageResponse.FromMessage(msg, out var sendMessageResponse))
                         {
                             Console.WriteLine($"Server response: {sendMessageResponse.ResponseCode}");
+                        }
+                    }
+
+                    if (msg.Command == Command.CHAT_MESSAGE)
+                    {
+                        if (ChatMessage.FromMessage(msg, out var chatMessage))
+                        {
+                            Console.WriteLine($"[CHAT] {chatMessage.Sender}: {chatMessage.Message}");
                         }
                     }
                 }

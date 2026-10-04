@@ -3,4 +3,5 @@
 public enum HeaderFieldId
 {
     RESPONSE_CODE = 0,
+    SENDER = 1,
 }

@@ -1,9 +1,8 @@
 ﻿using NetBox.Server.Handlers;
 using NetBox.Server.Models;
+using NetBox.Shared.Interfaces;
 using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
-using NetBox.Shared.Requests;
-using NetBox.Shared.Responses;
 using System.Net;
 using System.Net.Sockets;
 
@@ -52,6 +51,9 @@ public static class Server
 
     private static async Task HandleConnection(ClientSession clientSession)
     {
+        var loginHandler = new LoginHandler();
+        var sendMessageHandler = new SendMessageHandler();
+
         try
         {
             await using NetworkStream stream = clientSession.Client.GetStream();
@@ -68,18 +70,18 @@ public static class Server
                 var receivedMessages = parser.ParseBytes(buffer, bytesRead);
                 foreach (var message in receivedMessages)
                 {
-                    if (message == null) continue;
-
                     if (message.Command == Command.LOGIN)
                     {
-                        var loginHandler = new LoginHandler();
                         await loginHandler.Handle(message, clientSession);
                     }
 
                     if (message.Command == Command.SEND_MESSAGE)
                     {
-                        var sendMessageHandler = new SendMessageHandler();
-                        await sendMessageHandler.Handle(message, clientSession);
+                        var chatMessage = await sendMessageHandler.Handle(message, clientSession);
+                        if (chatMessage != null)
+                        {
+                            await BroadcastMessage(chatMessage, clientSession);
+                        }
                     }
                 }
             }
@@ -99,21 +101,24 @@ public static class Server
         }
     }
 
-    //private static async Task BroadcastMessage(string message)
-    //{
-    //    byte[] messageBytes = new Message(message).ToBytes();
+    private static async Task BroadcastMessage(IMessage message, ClientSession sender)
+    {
+        byte[] messageBytes = message.ToMessage().Serialize();
 
-    //    var clientListCopy = new List<TcpClient>();
-       
-    //    lock (ClientsLock)
-    //    {
-    //        clientListCopy.AddRange(ConnectedClients);
-    //    }
+        var clientSessionCopy = new List<ClientSession>();
 
-    //    foreach (var client in clientListCopy)
-    //    {
-    //        var stream = client.GetStream();
-    //        await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
-    //    }
-    //}
+        lock (ClientsLock)
+        {
+            clientSessionCopy.AddRange(ConnectedClients);
+        }
+
+        foreach (var client in clientSessionCopy)
+        {
+            if (client.Username == null) continue;
+            if (client == sender) continue;
+
+            var stream = client.Client.GetStream();
+            await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
+        }
+    }
 }
