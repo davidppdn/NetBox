@@ -19,9 +19,11 @@ public static class Client
         using var stream = client.GetStream();
 
         var loginTcs = new TaskCompletionSource<LoginResponseCode>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Func<TaskCompletionSource<LoginResponseCode>> getLoginTcs = () => loginTcs;
+        Action<TaskCompletionSource<LoginResponseCode>> setLoginTcs = (t) => loginTcs = t;
 
-        var readTask = HandleReads(stream, cts.Token, loginTcs);
-        var inputTask = HandleInput(stream, cts.Token, loginTcs);
+        var readTask = HandleReads(stream, cts.Token, getLoginTcs);
+        var inputTask = HandleInput(stream, cts.Token, getLoginTcs, setLoginTcs);
 
         await Task.WhenAny(readTask, inputTask);
         
@@ -30,42 +32,63 @@ public static class Client
         await Task.WhenAll(readTask, inputTask);
     }
 
-    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<LoginResponseCode> loginTcs)
+    private static async Task HandleInput(NetworkStream stream, CancellationToken cancellationToken, Func<TaskCompletionSource<LoginResponseCode>> getLoginTcs, Action<TaskCompletionSource<LoginResponseCode>> setLoginTcs)
     {
         try
         {
-            Console.WriteLine("Login with username:");
-            string username = Console.ReadLine();
-
-            var loginRequest = new LoginRequest(username);
-
-            byte[] data = loginRequest.ToMessage().Serialize();
-            await stream.WriteAsync(data, 0, data.Length);
-            // Wait for login response (or cancellation)
-            var loginCode = await loginTcs.Task.WaitAsync(cancellationToken);
-
-            if (loginCode == LoginResponseCode.SUCCESS)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                Console.WriteLine("Login successful. You can now send messages. Type '/logout' to exit.");
+                Console.WriteLine("Login with username:");
+                string username = Console.ReadLine();
+                if (username == null)
+                    break;
 
-                while (!cancellationToken.IsCancellationRequested)
+                var loginRequest = new LoginRequest(username);
+
+                byte[] data = loginRequest.ToMessage().Serialize();
+                await stream.WriteAsync(data, 0, data.Length, cancellationToken);
+
+                // Wait for login response (or cancellation)
+                LoginResponseCode loginCode;
+                try
                 {
-                    Console.Write("Send message: ");
-                    var message = Console.ReadLine();
-                    if (message == null)
-                        break;
-
-                    if (message.Trim().Equals("/logout", StringComparison.OrdinalIgnoreCase))
-                        break;
-
-                    var sendReq = new SendMessageRequest(message);
-                    var sendData = sendReq.ToMessage().Serialize();
-                    await stream.WriteAsync(sendData, 0, sendData.Length, cancellationToken);
+                    loginCode = await getLoginTcs().Task.WaitAsync(cancellationToken);
                 }
-            }
-            else
-            {
-                Console.WriteLine($"Login failed: {loginCode}");
+                catch (OperationCanceledException)
+                {
+                    // Cancellation requested, exit
+                    break;
+                }
+
+                if (loginCode == LoginResponseCode.SUCCESS)
+                {
+                    Console.WriteLine("Login successful. You can now send messages. Type '/logout' to exit.");
+
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        Console.Write("Send message: ");
+                        var message = Console.ReadLine();
+                        if (message == null)
+                            break;
+
+                        if (message.Trim().Equals("/logout", StringComparison.OrdinalIgnoreCase))
+                            break;
+
+                        var sendReq = new SendMessageRequest(message);
+                        var sendData = sendReq.ToMessage().Serialize();
+                        await stream.WriteAsync(sendData, 0, sendData.Length, cancellationToken);
+                    }
+
+                    // Exit after successful session
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine($"Login failed: {loginCode}. Please try again.");
+                    // Reset the awaiter so we can wait for the next login response
+                    setLoginTcs(new TaskCompletionSource<LoginResponseCode>(TaskCreationOptions.RunContinuationsAsynchronously));
+                    // Continue loop to prompt for credentials again
+                }
             }
         }
         catch (OperationCanceledException)
@@ -78,7 +101,7 @@ public static class Client
         }
     }
 
-    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken, TaskCompletionSource<LoginResponseCode> loginTcs)
+    private static async Task HandleReads(NetworkStream stream, CancellationToken cancellationToken, Func<TaskCompletionSource<LoginResponseCode>> getLoginTcs)
     {
         byte[] buffer = new byte[1024];
         var parser = new MessageParser();
@@ -101,7 +124,7 @@ public static class Client
                     {
                         if (LoginResponse.FromMessage(msg, out var loginResponse))
                         {
-                            loginTcs.TrySetResult(loginResponse.ResponseCode);
+                            getLoginTcs().TrySetResult(loginResponse.ResponseCode);
                         }
                     }
 
