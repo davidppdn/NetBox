@@ -2,6 +2,7 @@
 using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace NetBox.Shared.Requests;
 
@@ -26,7 +27,7 @@ public class LoginRequest : IMessage
     }
 
     public Message ToMessage() 
-        => new Message(Command.LOGIN, new Header(), Username);
+        => new Message(Command.LOGIN, new Header(), System.Text.Encoding.UTF8.GetBytes(Username));
 
     public static bool FromMessage(
         Message message,
@@ -44,11 +45,14 @@ public class LoginRequest : IMessage
             throw new InvalidDataException($"Extra headers found");
         }
 
-        var username = message.Payload;
-        if (username == null)
+        var payload = message.Payload;
+        if (payload == null)
         {
             throw new InvalidDataException("Missing payload");
         }
+
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        var username = utf8.GetString(payload);
 
         loginRequest = new LoginRequest(username);
         return true;

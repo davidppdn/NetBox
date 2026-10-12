@@ -13,7 +13,7 @@ public class MessageTests
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("alice")) });
 
-        var msg = new Message(Command.LOGIN, header, "payload");
+        var msg = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("payload"));
         var bytes = msg.Serialize();
 
         // Message.Deserialize expects the data starting at the header length (skip the initial 4-byte message length)
@@ -42,7 +42,7 @@ public class MessageTests
     public void Deserialize_MalformedHeaderLength_ReturnsFalse()
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("bob")) });
-        var msg = new Message(Command.LOGIN, header, "data");
+        var msg = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("data"));
         var bytes = msg.Serialize();
         var payload = new byte[bytes.Length - 4];
         Buffer.BlockCopy(bytes, 4, payload, 0, payload.Length);
@@ -57,7 +57,7 @@ public class MessageTests
     public void Deserialize_PayloadLengthMismatch_ReturnsFalse()
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("bob")) });
-        var msg = new Message(Command.LOGIN, header, "hello");
+        var msg = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("hello"));
         var bytes = msg.Serialize();
         var payload = new byte[bytes.Length - 4];
         Buffer.BlockCopy(bytes, 4, payload, 0, payload.Length);
@@ -77,7 +77,7 @@ public class MessageTests
     public void Deserialize_InvalidUtf8Payload_ReturnsFalse()
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("bob")) });
-        var msg = new Message(Command.LOGIN, header, "ok");
+        var msg = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("ok"));
         var bytes = msg.Serialize();
         var payload = new byte[bytes.Length - 4];
         Buffer.BlockCopy(bytes, 4, payload, 0, payload.Length);
@@ -90,6 +90,10 @@ public class MessageTests
         for (int i = 0; i < payloadLen; i++)
             payload[payloadSectionIndex + 4 + i] = 0xFF;
 
-        Assert.Throws<InvalidDataException>(() => Message.Deserialize(payload, out var _));
+        // With binary payloads Message.Deserialize should not attempt UTF-8 decoding; it should succeed and preserve bytes
+        bool ok = Message.Deserialize(payload, out var parsed);
+        Assert.True(ok);
+        Assert.NotNull(parsed);
+        Assert.Equal(payload.Skip(4).ToArray(), parsed!.Payload);
     }
 }

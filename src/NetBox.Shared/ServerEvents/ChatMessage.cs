@@ -2,6 +2,7 @@
 using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace NetBox.Shared.ServerEvents;
 
@@ -21,7 +22,7 @@ public class ChatMessage : IMessage
     {
         var headerField = new HeaderField(HeaderFieldId.SENDER, System.Text.Encoding.UTF8.GetBytes(Sender));
         var header = new Header(new List<HeaderField> { headerField });
-        return new Message(Command.CHAT_MESSAGE, header, Message);
+        return new Message(Command.CHAT_MESSAGE, header, System.Text.Encoding.UTF8.GetBytes(Message));
     }
 
     public static bool FromMessage(
@@ -56,7 +57,10 @@ public class ChatMessage : IMessage
             throw new InvalidDataException($"Payload is null for command: {message.Command}");
         }
 
-        chatMessage = new ChatMessage(sender, message.Payload ?? string.Empty);
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        var msg = utf8.GetString(message.Payload);
+
+        chatMessage = new ChatMessage(sender, msg);
         return true;
     }
 }

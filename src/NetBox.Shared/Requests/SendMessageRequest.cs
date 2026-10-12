@@ -2,6 +2,7 @@
 using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace NetBox.Shared.Requests;
 
@@ -16,7 +17,7 @@ public class SendMessageRequest : IMessage
     }
 
     public Message ToMessage()
-       => new Message(Command.SEND_MESSAGE, new Header(), Message);
+       => new Message(Command.SEND_MESSAGE, new Header(), System.Text.Encoding.UTF8.GetBytes(Message));
 
     public static bool FromMessage(
         Message message,
@@ -34,11 +35,14 @@ public class SendMessageRequest : IMessage
             throw new InvalidDataException($"Extra headers found");
         }
 
-        var messageContent = message.Payload;
-        if (messageContent == null)
+        var payload = message.Payload;
+        if (payload == null)
         {
             throw new InvalidDataException("Missing payload");
         }
+
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        var messageContent = utf8.GetString(payload);
 
         sendMessageRequest = new SendMessageRequest(messageContent);
         return true;

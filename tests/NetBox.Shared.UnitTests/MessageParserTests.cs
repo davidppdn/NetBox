@@ -12,7 +12,7 @@ public class MessageParserTests
     public void ParseBytes_SingleCompleteMessage_ReturnsMessage()
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("alice")) });
-        var original = new Message(Command.LOGIN, header, "hello");
+        var original = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("hello"));
         var bytes = original.Serialize();
 
         var parser = new MessageParser();
@@ -27,10 +27,10 @@ public class MessageParserTests
     public void ParseBytes_MultipleMessagesInSingleBuffer_ReturnsAllMessages()
     {
         var header1 = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("a")) });
-        var m1 = new Message(Command.LOGIN, header1, "one");
+        var m1 = new Message(Command.LOGIN, header1, Encoding.UTF8.GetBytes("one"));
 
         var header2 = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("b")) });
-        var m2 = new Message(Command.LOGIN, header2, "two");
+        var m2 = new Message(Command.LOGIN, header2, Encoding.UTF8.GetBytes("two"));
 
         var b1 = m1.Serialize();
         var b2 = m2.Serialize();
@@ -50,7 +50,7 @@ public class MessageParserTests
     public void ParseBytes_PartialMessageAcrossCalls_ReturnsCombinedMessage()
     {
         var header = new Header(new List<HeaderField> { new HeaderField(HeaderFieldId.RESPONSE_CODE, Encoding.UTF8.GetBytes("x")) });
-        var msg = new Message(Command.LOGIN, header, "partial");
+        var msg = new Message(Command.LOGIN, header, Encoding.UTF8.GetBytes("partial"));
         var bytes = msg.Serialize();
 
         // split into two parts

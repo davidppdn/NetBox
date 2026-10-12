@@ -19,9 +19,9 @@ public class Message
 {
     public Command Command { get; }
     public Header Header { get; }
-    public string? Payload { get; }
+    public byte[]? Payload { get; }
 
-    public Message(Command command, Header header, string? payload = null)
+    public Message(Command command, Header header, byte[]? payload = null)
     {
         Command = command;
         Header = header;
@@ -41,7 +41,7 @@ public class Message
     public byte[] Serialize()
     {
         var headerSerialized = Header.Serialize();
-        var payloadSerialized = Payload != null ? Encoding.UTF8.GetBytes(Payload) : null;
+        var payloadSerialized = Payload;
 
         var messageLengthBytes = 4;
         var commandIdLengthBytes = 4;
@@ -198,17 +198,10 @@ public class Message
                 throw new InvalidDataException($"Payload Length and length of data do not match. Expected: {payloadLength} Actual: {data.Length - pt}");
             }
 
-            var payloadBytes = data.Slice(pt, length);
-            var utf8StrictEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-            var payload = utf8StrictEncoding.GetString(payloadBytes);
+            var payloadBytes = data.Slice(pt, length).ToArray();
 
-            message = new Message(command, header, payload);
+            message = new Message(command, header, payloadBytes);
             return true;
-        }
-        catch (DecoderFallbackException exception)
-        {
-            Console.WriteLine($"Failed to decode the payload into UTF8: {exception.BytesUnknown}");
-            throw;
         }
         catch (Exception exception)
         {

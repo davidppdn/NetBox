@@ -9,3 +9,4 @@ This is the source of truth.
 3 - CreateChannel		Command
 4 - GetChannelList		Command
 5 - JoinChannel			Command
+6 - LeaveChannel		Command
