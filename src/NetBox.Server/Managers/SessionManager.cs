@@ -2,7 +2,7 @@
 using NetBox.Server.Models;
 using System.Collections.Concurrent;
 
-namespace NetBox.Server;
+namespace NetBox.Server.Managers;
 
 internal class SessionManager : ISessionManager
 {
