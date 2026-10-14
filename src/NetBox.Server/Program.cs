@@ -4,7 +4,6 @@ using NetBox.Server.Managers;
 using NetBox.Server.Models;
 using NetBox.Shared.Interfaces;
 using NetBox.Shared.Protocols;
-using NetBox.Shared.Protocols.Enums;
 using System.Net;
 using System.Net.Sockets;
 
@@ -99,17 +98,37 @@ public static class Server
 
     private static async Task BroadcastMessage(IMessage message, ClientSession sender)
     {
+        // Only broadcast to members of the same channel as the sender
+        var channelName = sender.CurrentChannel;
+        if (channelName == null)
+        {
+            // sender not in a channel -> nothing to broadcast
+            return;
+        }
+
+        if (!ChannelManager.TryGetChannel(channelName, out var channel))
+        {
+            // channel no longer exists
+            return;
+        }
+
         byte[] messageBytes = message.ToMessage().Serialize();
 
-        var clientSessionCopy = SessionManager.GetAll();
-
-        foreach (var client in clientSessionCopy)
+        var members = channel.GetMembers();
+        foreach (var client in members)
         {
             if (client.Username == null) continue;
             if (client == sender) continue;
 
-            var stream = client.Client.GetStream();
-            await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
+            try
+            {
+                var stream = client.Client.GetStream();
+                await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
+            }
+            catch
+            {
+                // Ignore send failures per-client
+            }
         }
     }
 }

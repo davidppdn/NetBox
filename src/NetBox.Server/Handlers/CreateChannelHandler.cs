@@ -1,4 +1,3 @@
-using NetBox.Server.Interfaces;
 using NetBox.Server.Managers;
 using NetBox.Server.Models;
 using NetBox.Shared.Protocols;
@@ -18,7 +17,6 @@ internal class CreateChannelHandler : ICommandHandler
         _channelManager = channelManager;
     }
 
-    // Ensure method is public for consistency.
     public async Task<IMessage?> Handle(Message message, ClientSession clientSession)
     {
         if (!CreateChannelRequest.FromMessage(message, out var request))

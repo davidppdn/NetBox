@@ -10,16 +10,13 @@ internal class CommandHandlerFactory
 
     public CommandHandlerFactory(ISessionManager sessionManager, ChannelManager channelManager)
     {
-        // Handlers that need session manager
         _handlers[Command.LOGIN] = new LoginHandler(sessionManager);
 
-        // Channel related handlers
         _handlers[Command.CREATE_CHANNEL] = new CreateChannelHandler(channelManager);
         _handlers[Command.GET_CHANNEL_LIST] = new GetChannelListHandler(channelManager);
         _handlers[Command.JOIN_CHANNEL] = new JoinChannelHandler(channelManager);
         _handlers[Command.LEAVE_CHANNEL] = new LeaveChannelHandler(channelManager);
 
-        // Message handler
         _handlers[Command.SEND_MESSAGE] = new SendMessageHandler();
     }
 

@@ -48,7 +48,6 @@ public static class Client
                 byte[] data = loginRequest.ToMessage().Serialize();
                 await stream.WriteAsync(data, 0, data.Length, cancellationToken);
 
-                // Wait for login response (or cancellation)
                 LoginResponseCode loginCode;
                 try
                 {
@@ -56,7 +55,6 @@ public static class Client
                 }
                 catch (OperationCanceledException)
                 {
-                    // Cancellation requested, exit
                     break;
                 }
 
@@ -79,7 +77,6 @@ public static class Client
                         await stream.WriteAsync(sendData, 0, sendData.Length, cancellationToken);
                     }
 
-                    // Exit after successful session
                     break;
                 }
                 else
