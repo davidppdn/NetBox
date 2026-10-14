@@ -12,11 +12,17 @@ namespace NetBox.Server.Models;
 internal record ClientSession(TcpClient Client)
 {
     public string? Username { get; private set; }
+    public string? CurrentChannel { get; private set; }
 
     public void SetUsername(string username)
     {
         ArgumentNullException.ThrowIfNull(username);
         Username = username;
+    }
+
+    public void SetChannel(string? channelName)
+    {
+        CurrentChannel = channelName;
     }
 
     public async Task SendMessage(IMessage message)

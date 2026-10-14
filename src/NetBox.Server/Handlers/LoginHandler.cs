@@ -4,10 +4,11 @@ using NetBox.Shared.Protocols;
 using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
 using NetBox.Shared.Responses;
+using NetBox.Shared.Interfaces;
 
 namespace NetBox.Server.Handlers;
 
-internal class LoginHandler
+internal class LoginHandler : ICommandHandler
 {
     private readonly ISessionManager _sessionManager;
 
@@ -16,7 +17,7 @@ internal class LoginHandler
         _sessionManager = sessionManager;
     }
 
-    internal async Task Handle(Message message, ClientSession clientSession)
+    public async Task<IMessage?> Handle(Message message, ClientSession clientSession)
     {
         if (!LoginRequest.FromMessage(message, out var request))
         {
@@ -30,10 +31,12 @@ internal class LoginHandler
         {
             var fail = new LoginResponse(LoginResponseCode.FAIL);
             await clientSession.SendMessage(fail);
-            return;
+            return null;
         }
 
         var response = new LoginResponse(LoginResponseCode.SUCCESS);
         await clientSession.SendMessage(response);
+
+        return null;
     }
 }

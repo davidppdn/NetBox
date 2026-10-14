@@ -4,12 +4,13 @@ using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
 using NetBox.Shared.Responses;
 using NetBox.Shared.ServerEvents;
+using NetBox.Shared.Interfaces;
 
 namespace NetBox.Server.Handlers;
 
-internal class SendMessageHandler
+internal class SendMessageHandler : ICommandHandler
 {
-    internal async Task<ChatMessage?> Handle(Message message, ClientSession clientSession)
+    public async Task<IMessage?> Handle(Message message, ClientSession clientSession)
     {
         if (!SendMessageRequest.FromMessage(message, out var request))
         {

@@ -8,7 +8,7 @@ internal class ChannelManager
 {
     private readonly ConcurrentDictionary<string, Channel> _channels = new(StringComparer.OrdinalIgnoreCase);
 
-    public bool TryCreateChannel(string name, out Channel? channel)
+    public bool TryCreateChannel(string name, [NotNullWhen(true)] out Channel? channel)
     {
         var newChannel = new Channel(name);
 
@@ -22,7 +22,7 @@ internal class ChannelManager
         return false;
     }
 
-    public bool TryGetChannel(string name, out Channel? channel)
+    public bool TryGetChannel(string name, [NotNullWhen(true)] out Channel? channel)
     {
         return _channels.TryGetValue(name, out channel);
     }
@@ -37,5 +37,10 @@ internal class ChannelManager
 
         members = removedChannel.GetMembers();
         return true;
+    }
+
+    public IReadOnlyList<string> GetAllChannelNames()
+    {
+        return _channels.Keys.ToList();
     }
 }

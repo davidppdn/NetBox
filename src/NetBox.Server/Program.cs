@@ -1,6 +1,6 @@
-﻿using NetBox.Server;
-using NetBox.Server.Handlers;
+﻿using NetBox.Server.Handlers;
 using NetBox.Server.Interfaces;
+using NetBox.Server.Managers;
 using NetBox.Server.Models;
 using NetBox.Shared.Interfaces;
 using NetBox.Shared.Protocols;
@@ -13,6 +13,7 @@ public static class Server
     private static readonly IPAddress IpAddress = IPAddress.Loopback;
     private static readonly int Port = 5000;
     private static readonly ISessionManager SessionManager = new SessionManager();
+    private static readonly ChannelManager ChannelManager = new ChannelManager();
 
     public static async Task Main(string[] args)
     {
@@ -48,8 +49,8 @@ public static class Server
 
     private static async Task HandleConnection(ClientSession clientSession)
     {
-        var loginHandler = new LoginHandler(SessionManager);
-        var sendMessageHandler = new SendMessageHandler();
+        var factory = new CommandHandlerFactory(SessionManager, ChannelManager);
+        var delegator = new CommandDelegator(factory);
 
         try
         {
@@ -67,18 +68,10 @@ public static class Server
                 var receivedMessages = parser.ParseBytes(buffer, bytesRead);
                 foreach (var message in receivedMessages)
                 {
-                    if (message.Command == Command.LOGIN)
+                    var result = await delegator.Handle(message, clientSession);
+                    if (result != null && result is NetBox.Shared.ServerEvents.ChatMessage chat)
                     {
-                        await loginHandler.Handle(message, clientSession);
-                    }
-
-                    if (message.Command == Command.SEND_MESSAGE)
-                    {
-                        var chatMessage = await sendMessageHandler.Handle(message, clientSession);
-                        if (chatMessage != null)
-                        {
-                            await BroadcastMessage(chatMessage, clientSession);
-                        }
+                        await BroadcastMessage(chat, clientSession);
                     }
                 }
             }
@@ -89,6 +82,15 @@ public static class Server
         }
             finally
             {
+                // If client was in a channel, remove from that channel
+                if (clientSession.CurrentChannel != null)
+                {
+                    if (ChannelManager.TryGetChannel(clientSession.CurrentChannel, out var channel))
+                    {
+                        channel.RemoveMember(clientSession);
+                    }
+                }
+
                 SessionManager.Remove(clientSession);
 
                 clientSession.Client.Close();
