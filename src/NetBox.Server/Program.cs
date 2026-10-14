@@ -98,17 +98,14 @@ public static class Server
 
     private static async Task BroadcastMessage(IMessage message, ClientSession sender)
     {
-        // Only broadcast to members of the same channel as the sender
         var channelName = sender.CurrentChannel;
         if (channelName == null)
         {
-            // sender not in a channel -> nothing to broadcast
             return;
         }
 
         if (!ChannelManager.TryGetChannel(channelName, out var channel))
         {
-            // channel no longer exists
             return;
         }
 
@@ -127,7 +124,6 @@ public static class Server
             }
             catch
             {
-                // Ignore send failures per-client
             }
         }
     }

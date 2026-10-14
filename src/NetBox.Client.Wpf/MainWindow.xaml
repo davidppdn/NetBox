@@ -1,0 +1,63 @@
+<Window x:Class="NetBox.Client.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NetBox WPF Client" Height="400" Width="600">
+    <Grid Margin="10">
+        <!-- Login panel -->
+        <StackPanel x:Name="LoginPanel" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="NetBox Login" FontSize="20" FontWeight="Bold" Margin="0,0,0,12" HorizontalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Label Content="Username:" VerticalAlignment="Center" />
+                <TextBox x:Name="UsernameBox" Width="200" Margin="6,0,6,0" />
+                <Button x:Name="ConnectButton" Content="Submit" Click="ConnectButton_Click" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Main panel (hidden until logged in) -->
+        <Grid x:Name="MainPanel" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="WelcomeText" Grid.ColumnSpan="2" Margin="0,0,0,8" FontWeight="Bold" />
+
+            <!-- Channel list on left -->
+            <Border Grid.Row="1" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="4" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="Channels" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <ListBox x:Name="ChannelsList" Height="250" SelectionChanged="ChannelsList_SelectionChanged" />
+                </StackPanel>
+            </Border>
+
+            <!-- Chat area on right -->
+            <Border Grid.Row="1" Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ListBox x:Name="ChatList" Grid.Row="0" />
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBox x:Name="MessageBox" Width="450" IsEnabled="False" />
+                        <Button x:Name="SendButton" Content="Send" Width="100" Margin="8,0,0,0" Click="SendButton_Click" IsEnabled="False" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Bottom buttons -->
+            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                <Button x:Name="CreateChannelButton" Content="Create Channel" Click="CreateChannelButton_Click" Margin="6" />
+                <Button x:Name="JoinChannelButton" Content="Join Channel" Click="JoinChannelButton_Click" Margin="6" IsEnabled="False" />
+                <Button x:Name="LeaveChannelButton" Content="Leave Channel" Click="LeaveChannelButton_Click" Margin="6" IsEnabled="False" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

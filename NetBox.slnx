@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="src/NetBox.Client.Wpf/NetBox.Client.Wpf.csproj" />
   <Project Path="src/NetBox.Client/NetBox.Client.csproj" />
   <Project Path="src/NetBox.Server/NetBox.Server.csproj" />
   <Project Path="src/NetBox.Shared/NetBox.Shared.csproj" />
