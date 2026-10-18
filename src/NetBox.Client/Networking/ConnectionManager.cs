@@ -23,6 +23,8 @@ public class ConnectionManager
     private TaskCompletionSource<CreateChannelResponse>? _createChannelTcs;
     private TaskCompletionSource<SendMessageResponse>? _sendMessageTcs;
 
+    // use id, task completion source dict for concurrent requests, but for now we will assume only one request of each type at a time
+
     public ConnectionManager(MessageDispatcher dispatcher)
     {
         _dispatcher = dispatcher;
