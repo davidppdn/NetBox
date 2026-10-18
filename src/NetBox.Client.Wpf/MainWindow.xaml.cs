@@ -27,6 +27,24 @@ public partial class MainWindow : Window
         _dispatcher = new MessageDispatcher();
         _connection = new ConnectionManager(_dispatcher);
         _viewModel = new ChatViewModel(_connection, _dispatcher);
+
+        _dispatcher.MessageReceived += OnMessageReceivedAsync;
+    }
+
+    private async Task OnMessageReceivedAsync(NetBox.Shared.Protocols.Message msg)
+    {
+        // Handle chat messages from server
+        if (msg.Command == NetBox.Shared.Protocols.Enums.Command.CHAT_MESSAGE)
+        {
+            if (NetBox.Shared.ServerEvents.ChatMessage.FromMessage(msg, out var chat))
+            {
+                // marshal to UI thread
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _messages.Add($"[{chat.Sender}] {chat.Message}");
+                }));
+            }
+        }
     }
 
     private async void ConnectButton_Click(object sender, RoutedEventArgs e)
@@ -75,6 +93,8 @@ public partial class MainWindow : Window
                 _channels.Add(name);
             }
         }
+
+        // TODO: send CreateChannelRequest to server
     }
 
     private void ChannelsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
