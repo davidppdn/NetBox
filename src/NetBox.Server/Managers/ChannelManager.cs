@@ -15,6 +15,7 @@ internal class ChannelManager
         if (_channels.TryAdd(name, newChannel))
         {
             channel = newChannel;
+            Console.WriteLine($"Channel '{name}' created.");
             return true;
         }
 

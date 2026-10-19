@@ -82,19 +82,40 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CreateChannelButton_Click(object sender, RoutedEventArgs e)
+    private async void CreateChannelButton_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new CreateChannelDialog();
-        if (dlg.ShowDialog() == true)
+        if (dlg.ShowDialog() != true) return;
+
+        var name = dlg.ChannelName?.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        CreateChannelButton.IsEnabled = false;
+        try
         {
-            var name = dlg.ChannelName?.Trim();
-            if (!string.IsNullOrEmpty(name) && !_channels.Contains(name))
+            var resp = await _connection.CreateChannelAsync(name);
+            if (resp.ResponseCode == NetBox.Shared.Protocols.Enums.CreateChannelResponseCode.CHANNEL_CREATED)
             {
-                _channels.Add(name);
+                if (!_channels.Contains(name))
+                    _channels.Add(name);
+            }
+            else if (resp.ResponseCode == NetBox.Shared.Protocols.Enums.CreateChannelResponseCode.CHANNEL_ALREADY_EXISTS)
+            {
+                System.Windows.MessageBox.Show($"Channel '{name}' already exists.", "Create Channel", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show($"Create channel failed: {resp.ResponseCode}", "Create Channel", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
-
-        // TODO: send CreateChannelRequest to server
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error creating channel: {ex.Message}", "Create Channel", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            CreateChannelButton.IsEnabled = true;
+        }
     }
 
     private void ChannelsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
