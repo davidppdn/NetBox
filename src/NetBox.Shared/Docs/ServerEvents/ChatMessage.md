@@ -2,7 +2,7 @@
 Id: 2
 Command: ChatMessage
 
-This command broadcasts a chat message to all connected clients, except the sender.
+This command broadcasts a chat message to all connected clients in the same chat, except the sender.
 
 Message:
 Additional Headers:

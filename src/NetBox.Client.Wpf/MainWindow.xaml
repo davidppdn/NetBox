@@ -63,7 +63,7 @@
                 <Button x:Name="CreateChannelButton" Content="Create Channel" Click="CreateChannelButton_Click" Margin="6" />
                 <Button x:Name="JoinChannelButton" Content="Join Channel" Click="JoinChannelButton_Click" Margin="6" IsEnabled="False" />
                 <Button x:Name="LeaveChannelButton" Content="Leave Channel" Click="LeaveChannelButton_Click" Margin="6" IsEnabled="False" />
-                <Button x:Name="RefreshChannelButton" Content="Refresh Channels" Click="RefreshChannelButton_Click" Margin="6" IsEnabled="False" />
+                <Button x:Name="RefreshChannelButton" Content="Refresh Channels" Click="RefreshChannelButton_Click" Margin="6" />
             </StackPanel>
         </Grid>
     </Grid>

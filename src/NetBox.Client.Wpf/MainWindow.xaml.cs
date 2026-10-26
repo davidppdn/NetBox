@@ -45,6 +45,17 @@ public partial class MainWindow : Window
                 }));
             }
         }
+
+        if (msg.Command == NetBox.Shared.Protocols.Enums.Command.JOIN_MESSAGE)
+        {
+            if (NetBox.Shared.ServerEvents.JoinMessage.FromMessage(msg, out var join))
+            {
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _messages.Add($"[System] {join.Sender} joined the channel.");
+                }));
+            }
+        }
     }
 
     private async void ConnectButton_Click(object sender, RoutedEventArgs e)

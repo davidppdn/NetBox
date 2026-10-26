@@ -6,6 +6,7 @@ using NetBox.Shared.Interfaces;
 using NetBox.Shared.Protocols;
 using System.Net;
 using System.Net.Sockets;
+using System.Xml.XPath;
 
 public static class Server
 {
@@ -71,6 +72,12 @@ public static class Server
                     if (result != null && result is NetBox.Shared.ServerEvents.ChatMessage chat)
                     {
                         await BroadcastMessage(chat, clientSession);
+                    }
+
+                    if (result != null && result is NetBox.Shared.ServerEvents.JoinMessage join)
+                    {
+                        Console.WriteLine($"User {clientSession.Username} joined channel {clientSession.CurrentChannel}");
+                        await BroadcastMessage(join, clientSession);
                     }
                 }
             }

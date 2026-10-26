@@ -5,6 +5,7 @@ using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
 using NetBox.Shared.Responses;
 using NetBox.Shared.Interfaces;
+using NetBox.Shared.ServerEvents;
 
 namespace NetBox.Server.Handlers;
 
@@ -50,6 +51,8 @@ internal class JoinChannelHandler : ICommandHandler
 
         var response = new JoinChannelResponse(JoinChannelResponseCode.SUCCESS);
         await clientSession.SendMessage(response);
-        return null;
+
+        var joinMessage = new JoinMessage(clientSession.Username);
+        return joinMessage;
     }
 }

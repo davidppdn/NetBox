@@ -13,4 +13,6 @@ public enum Command
     GET_CHANNEL_LIST = 4,
     JOIN_CHANNEL = 5,
     LEAVE_CHANNEL = 6,
+    JOIN_MESSAGE = 7,
+    LEAVE_MESSAGE = 8,
 }
