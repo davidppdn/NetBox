@@ -225,14 +225,27 @@ public partial class MainWindow : Window
         LoadChannelsAsync();
     }
 
-    private void SendButton_Click(object sender, RoutedEventArgs e)
+    private async void SendButton_Click(object sender, RoutedEventArgs e)
     {
         var text = MessageBox.Text;
         if (string.IsNullOrWhiteSpace(text)) return;
 
-        _messages.Add($"[{_username}] {text}");
+        _messages.Add($"[Me] {text}");
         MessageBox.Clear();
 
+        try
+        {
+            var response = await _connection.SendChatMessageAsync(text);
+            
+            if (response.ResponseCode != NetBox.Shared.Protocols.Enums.SendMessageResponseCode.SUCCESS)
+            {
+                System.Windows.MessageBox.Show($"Failed to send message: {response.ResponseCode}", "Send Message", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error sending message: {ex.Message}", "Send Message", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         // TODO: send SendMessageRequest to server
     }
 }
