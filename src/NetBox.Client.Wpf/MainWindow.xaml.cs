@@ -72,6 +72,8 @@ public partial class MainWindow : Window
                 MainPanel.Visibility = Visibility.Collapsed;
                 return;
             }
+
+            LoadChannelsAsync();
         }
         catch (Exception ex)
         {
@@ -79,6 +81,36 @@ public partial class MainWindow : Window
             LoginPanel.Visibility = Visibility.Visible;
             MainPanel.Visibility = Visibility.Collapsed;
             return;
+        }
+    }
+
+    private async void LoadChannelsAsync()
+    {
+        try
+        {
+            var response = await _connection.GetChannelListAsync();
+            if (response.ResponseCode != NetBox.Shared.Protocols.Enums.GetChannelListResponseCode.SUCCESS)
+            {
+                System.Windows.MessageBox.Show($"Failed to load channels: {response.ResponseCode}", "NetBox", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _channels.Clear();
+            var channels = response.Channels;
+
+            if (channels == null || channels.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var channel in channels)
+            {
+                _channels.Add(channel);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error loading channels: {ex.Message}", "NetBox", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -186,6 +218,11 @@ public partial class MainWindow : Window
         JoinChannelButton.IsEnabled = ChannelsList.SelectedItem != null;
         MessageBox.IsEnabled = false;
         SendButton.IsEnabled = false;
+    }
+
+    private async void  RefreshChannelButton_Click(object sender, RoutedEventArgs e)
+    {
+        LoadChannelsAsync();
     }
 
     private void SendButton_Click(object sender, RoutedEventArgs e)
