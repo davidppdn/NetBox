@@ -51,6 +51,7 @@ public static class Server
     {
         var factory = new CommandHandlerFactory(SessionManager, ChannelManager);
         var delegator = new CommandDelegator(factory);
+        string? currentChannel = null;
 
         try
         {
@@ -76,8 +77,16 @@ public static class Server
 
                     if (result != null && result is NetBox.Shared.ServerEvents.JoinMessage join)
                     {
-                        Console.WriteLine($"User {clientSession.Username} joined channel {clientSession.CurrentChannel}");
+                        Console.WriteLine($"User {clientSession.Username} joined channel {clientSession.Channel}");
+                        currentChannel = clientSession.Channel;
                         await BroadcastMessage(join, clientSession);
+                    }
+
+                    if (result != null && result is NetBox.Shared.ServerEvents.LeaveMessage leave)
+                    {
+                        Console.WriteLine($"User {clientSession.Username} left channel {clientSession.Channel}");
+                        await BroadcastMessage(leave, clientSession, currentChannel);
+                        currentChannel = null;
                     }
                 }
             }
@@ -89,9 +98,9 @@ public static class Server
             finally
             {
                 // If client was in a channel, remove from that channel
-                if (clientSession.CurrentChannel != null)
+                if (clientSession.Channel != null)
                 {
-                    if (ChannelManager.TryGetChannel(clientSession.CurrentChannel, out var channel))
+                    if (ChannelManager.TryGetChannel(clientSession.Channel, out var channel))
                     {
                         channel.RemoveMember(clientSession);
                     }
@@ -103,10 +112,10 @@ public static class Server
             }
     }
 
-    private static async Task BroadcastMessage(IMessage message, ClientSession sender)
+    private static async Task BroadcastMessage(IMessage message, ClientSession sender, string? currentChannel = null)
     {
-        var channelName = sender.CurrentChannel;
-        if (channelName == null)
+        var channelName = sender.Channel ?? currentChannel;
+        if (channelName == null || channelName == "")
         {
             return;
         }

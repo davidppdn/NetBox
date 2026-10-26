@@ -10,3 +10,6 @@ This is the source of truth.
 4 - GetChannelList		Command
 5 - JoinChannel			Command
 6 - LeaveChannel		Command
+7 - JoinMessage			Server Event
+8 - LeaveMessage		Server Event
+9 - DisconnectMessage	Server Event

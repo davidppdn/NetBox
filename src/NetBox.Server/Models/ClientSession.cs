@@ -12,7 +12,7 @@ namespace NetBox.Server.Models;
 internal record ClientSession(TcpClient Client)
 {
     public string? Username { get; private set; }
-    public string? CurrentChannel { get; private set; }
+    public string? Channel { get; private set; }
 
     public void SetUsername(string username)
     {
@@ -22,7 +22,7 @@ internal record ClientSession(TcpClient Client)
 
     public void SetChannel(string? channelName)
     {
-        CurrentChannel = channelName;
+        Channel = channelName;
     }
 
     public async Task SendMessage(IMessage message)

@@ -5,6 +5,7 @@ using NetBox.Shared.Protocols.Enums;
 using NetBox.Shared.Requests;
 using NetBox.Shared.Responses;
 using NetBox.Shared.Interfaces;
+using NetBox.Shared.ServerEvents;
 
 namespace NetBox.Server.Handlers;
 
@@ -31,14 +32,14 @@ internal class LeaveChannelHandler : ICommandHandler
             return null;
         }
 
-        if (clientSession.CurrentChannel == null)
+        if (clientSession.Channel == null)
         {
             var notIn = new LeaveChannelResponse(LeaveChannelResponseCode.NOT_IN_CHANNEL);
             await clientSession.SendMessage(notIn);
             return null;
         }
 
-        if (_channelManager.TryGetChannel(clientSession.CurrentChannel, out var channel))
+        if (_channelManager.TryGetChannel(clientSession.Channel, out var channel))
         {
             channel.RemoveMember(clientSession);
         }
@@ -47,6 +48,8 @@ internal class LeaveChannelHandler : ICommandHandler
 
         var response = new LeaveChannelResponse(LeaveChannelResponseCode.SUCCESS);
         await clientSession.SendMessage(response);
-        return null;
+
+        var leaveMessage = new LeaveMessage(clientSession.Username);
+        return leaveMessage;
     }
 }

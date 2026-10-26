@@ -32,7 +32,7 @@ internal class JoinChannelHandler : ICommandHandler
             return null;
         }
 
-        if (clientSession.CurrentChannel != null)
+        if (clientSession.Channel != null)
         {
             var already = new JoinChannelResponse(JoinChannelResponseCode.ALREADY_IN_CHANNEL);
             await clientSession.SendMessage(already);

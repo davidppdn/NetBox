@@ -1,4 +1,4 @@
-## Id:2 Command - JoinMessage
+## Id:7 Command - JoinMessage
 Id: 7
 Command: JoinMessage
 

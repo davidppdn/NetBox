@@ -56,6 +56,17 @@ public partial class MainWindow : Window
                 }));
             }
         }
+
+        if (msg.Command == NetBox.Shared.Protocols.Enums.Command.LEAVE_MESSAGE)
+        {
+            if (NetBox.Shared.ServerEvents.LeaveMessage.FromMessage(msg, out var leave))
+            {
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _messages.Add($"[System] {leave.Sender} left the channel.");
+                }));
+            }
+        }
     }
 
     private async void ConnectButton_Click(object sender, RoutedEventArgs e)
@@ -217,11 +228,23 @@ public partial class MainWindow : Window
         }
     }
 
-    private void LeaveChannelButton_Click(object sender, RoutedEventArgs e)
+    private async void LeaveChannelButton_Click(object sender, RoutedEventArgs e)
     {
         if (_currentChannel == null) return;
 
-        // TODO: send LeaveChannelRequest to server
+        try
+        {
+            var response = await _connection.LeaveChannelAsync();
+
+            if (response.ResponseCode != NetBox.Shared.Protocols.Enums.LeaveChannelResponseCode.SUCCESS)
+            {
+                System.Windows.MessageBox.Show($"Failed to leave channel: {response.ResponseCode}", "Leave Channel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error leaving channel: {ex.Message}", "Leave Channel", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
 
         _messages.Add($"[System] Left channel: {_currentChannel}");
         _currentChannel = null;
