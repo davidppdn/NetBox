@@ -124,7 +124,7 @@ public partial class MainWindow : Window
         JoinChannelButton.IsEnabled = !string.IsNullOrEmpty(selected) && _currentChannel == null;
     }
 
-    private void JoinChannelButton_Click(object sender, RoutedEventArgs e)
+    private async void JoinChannelButton_Click(object sender, RoutedEventArgs e)
     {
         var selected = ChannelsList.SelectedItem as string;
         if (string.IsNullOrEmpty(selected)) return;
@@ -138,7 +138,40 @@ public partial class MainWindow : Window
         _messages.Clear();
         _messages.Add($"[System] Joined channel: {_currentChannel}");
 
-        // TODO: send JoinChannelRequest to server
+        try
+        {
+            var response = await _connection.JoinChannelAsync(_currentChannel);
+            if (response.ResponseCode == NetBox.Shared.Protocols.Enums.JoinChannelResponseCode.FAILURE)
+            {
+                System.Windows.MessageBox.Show($"Failed to join channel: {response.ResponseCode}", "Join Channel", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _currentChannel = null;
+                LeaveChannelButton.IsEnabled = false;
+                JoinChannelButton.IsEnabled = ChannelsList.SelectedItem != null;
+                MessageBox.IsEnabled = false;
+                SendButton.IsEnabled = false;
+            }
+            else if (response.ResponseCode == NetBox.Shared.Protocols.Enums.JoinChannelResponseCode.CHANNEL_NOT_FOUND)
+            {
+                System.Windows.MessageBox.Show($"Channel '{_currentChannel}' not found.", "Join Channel", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _currentChannel = null;
+                LeaveChannelButton.IsEnabled = false;
+                JoinChannelButton.IsEnabled = ChannelsList.SelectedItem != null;
+                MessageBox.IsEnabled = false;
+                SendButton.IsEnabled = false;
+            }
+            else if (response.ResponseCode == NetBox.Shared.Protocols.Enums.JoinChannelResponseCode.ALREADY_IN_CHANNEL)
+            {
+                System.Windows.MessageBox.Show($"Already in channel '{_currentChannel}'.", "Join Channel", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                System.Windows.MessageBox.Show($"Joined channel '{_currentChannel}'.", "Join Channel", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error joining channel: {ex.Message}", "Join Channel", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void LeaveChannelButton_Click(object sender, RoutedEventArgs e)
