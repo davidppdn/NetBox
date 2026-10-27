@@ -24,6 +24,8 @@ public class ConnectionManager
     private TaskCompletionSource<SendMessageResponse>? _sendMessageTcs;
 
     // use id, task completion source dict for concurrent requests, but for now we will assume only one request of each type at a time
+    // Note: this implementation is not thread-safe for mutliple concurrent requests of the same type. In a production scenario, you would want to use a more robust mechanism to handle multiple concurrent requests and responses.
+    // However, for this project, we will assume that the client will not send multiple requests of the same type concurrently. Keep it simple for now.
 
     public ConnectionManager(MessageDispatcher dispatcher)
     {
