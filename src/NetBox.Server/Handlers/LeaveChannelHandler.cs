@@ -42,6 +42,11 @@ internal class LeaveChannelHandler : ICommandHandler
         if (_channelManager.TryGetChannel(clientSession.Channel, out var channel))
         {
             channel.RemoveMember(clientSession);
+
+            if (channel.GetMembers().Count == 0)
+            {
+                _channelManager.TryRemoveChannel(channel.Name, out _);
+            }
         }
 
         clientSession.SetChannel(null);
