@@ -106,6 +106,16 @@ public static class Server
                     }
                 }
 
+                if (clientSession.Username != null)
+                {
+                    Console.WriteLine($"User {clientSession.Username} disconnected.");
+                    await BroadcastMessage(new NetBox.Shared.ServerEvents.DisconnectMessage(clientSession.Username), clientSession, currentChannel);
+                }
+                else
+                {
+                    Console.WriteLine("Client disconnected.");
+                }
+
                 SessionManager.Remove(clientSession);
 
                 clientSession.Client.Close();

@@ -15,4 +15,5 @@ public enum Command
     LEAVE_CHANNEL = 6,
     JOIN_MESSAGE = 7,
     LEAVE_MESSAGE = 8,
+    DISCONNECT_MESSAGE = 9
 }

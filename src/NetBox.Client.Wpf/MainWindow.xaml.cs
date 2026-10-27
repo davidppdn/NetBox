@@ -67,6 +67,17 @@ public partial class MainWindow : Window
                 }));
             }
         }
+
+        if (msg.Command == NetBox.Shared.Protocols.Enums.Command.DISCONNECT_MESSAGE)
+        {
+            if (NetBox.Shared.ServerEvents.DisconnectMessage.FromMessage(msg, out var disconnect))
+            {
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _messages.Add($"[Server] {disconnect.Sender} died abruply.");
+                }));
+            }
+        }
     }
 
     private async void ConnectButton_Click(object sender, RoutedEventArgs e)
