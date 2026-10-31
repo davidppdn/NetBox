@@ -23,9 +23,14 @@ public class ConnectionManager
     private TaskCompletionSource<CreateChannelResponse>? _createChannelTcs;
     private TaskCompletionSource<SendMessageResponse>? _sendMessageTcs;
 
-    // use id, task completion source dict for concurrent requests, but for now we will assume only one request of each type at a time
-    // Note: this implementation is not thread-safe for mutliple concurrent requests of the same type. In a production scenario, you would want to use a more robust mechanism to handle multiple concurrent requests and responses.
-    // However, for this project, we will assume that the client will not send multiple requests of the same type concurrently. Keep it simple for now.
+    /// <Thoughts>
+    /// The issue with this implementation, is that if you try and send a request of the same type before the previous one has completed, the first requests return will be the
+    /// second requests response. Since each request type is derived from the same message type, we can modify this implementation to use a dictionary of TaskCompletionSource keyed by a unique identifier
+    /// that gets inserted into the request message, and is returned in the response message.
+    /// 
+    /// We would use TaskCompletionSource<Message>, read the unique identifier from repsonse, cancel the TaskCompletionSource for the identifier, and set the result of the TaskCompletionSource to the response message. 
+    /// The caller would then be responsible for parsing the response message into the appropriate response type.
+    /// </Thoughts>
 
     public ConnectionManager(MessageDispatcher dispatcher)
     {
